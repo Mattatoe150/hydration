@@ -10,21 +10,18 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
 <style>
   :root{
-    --water:#1e88e5; --vending:#f57c00; --shop:#2e9e3f; --fuel:#8e44ad; --community:#d81b8c;
-    --bg:#ffffff; --fg:#1c2330; --muted:#5b6675; --line:#e4e8ee; --shadow:0 4px 18px rgba(20,30,50,.18);
+    --water:#1e88e5; --vdrinks:#f57c00; --vsnacks:#c98a00; --shop:#2e9e3f; --fuel:#8e44ad; --community:#d81b8c;
+    --bg:#fff; --fg:#1c2330; --muted:#5b6675; --line:#e4e8ee; --shadow:0 4px 18px rgba(20,30,50,.18);
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--fg)}
   #map{position:absolute;inset:0}
   .card{background:var(--bg);border-radius:14px;box-shadow:var(--shadow)}
-  /* ---- control panel ---- */
-  #panel{position:absolute;z-index:1000;top:12px;left:12px;width:264px;max-width:calc(100vw - 24px);
-         padding:14px 15px 12px;font-size:13px}
+  #panel{position:absolute;z-index:1000;top:12px;left:12px;width:270px;max-width:calc(100vw - 24px);padding:14px 15px 12px;font-size:13px}
   #panel h1{margin:0 0 2px;font-size:16px;display:flex;align-items:center;gap:7px}
   #panel .sub{color:var(--muted);font-size:11.5px;margin:0 0 10px;line-height:1.4}
   .lyr{display:flex;align-items:center;gap:9px;padding:5px 6px;border-radius:8px;cursor:pointer;user-select:none}
   .lyr:hover{background:#f4f7fb}
-  .lyr input{display:none}
   .lyr .dot{width:15px;height:15px;border-radius:50%;flex:0 0 auto;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
   .lyr .nm{flex:1}
   .lyr .ct{color:var(--muted);font-variant-numeric:tabular-nums;font-size:11.5px}
@@ -34,35 +31,37 @@
   .toggle input{accent-color:var(--shop)}
   .note{color:var(--muted);font-size:10.8px;line-height:1.45;margin-top:9px}
   #ohstatus{color:var(--muted);font-size:10.8px;margin-top:6px;min-height:13px}
-  /* ---- buttons ---- */
   .btnrow{display:flex;gap:8px;margin-top:11px}
-  .btn{flex:1;border:0;border-radius:9px;padding:9px 8px;font-size:12.5px;font-weight:600;cursor:pointer;
-       display:flex;align-items:center;justify-content:center;gap:6px}
+  .btn{flex:1;border:0;border-radius:9px;padding:9px 8px;font-size:12.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
   .btn.primary{background:#1e88e5;color:#fff}
   .btn.ghost{background:#eef2f7;color:var(--fg)}
+  .btn.small{padding:6px 10px;font-size:12px;flex:0 0 auto}
   .btn:active{transform:translateY(1px)}
-  /* ---- popups ---- */
-  .leaflet-popup-content{margin:11px 13px;font-size:13px;line-height:1.5;min-width:170px}
+  .helplink{display:block;margin-top:8px;font-size:11.5px;color:#1e88e5;cursor:pointer;text-align:center}
+  .leaflet-popup-content{margin:11px 13px;font-size:13px;line-height:1.5;min-width:180px}
   .pt{font-weight:700;font-size:13.5px;margin-bottom:1px}
   .badge{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;color:#fff;margin:3px 0}
-  .b-open{background:#2e9e3f}.b-closed{background:#d23b3b}.b-unk{background:#8a94a3}
+  .b-open{background:#2e9e3f}.b-closed{background:#d23b3b}.b-unk{background:#8a94a3}.b-verified{background:#d81b8c}
   .kv{color:var(--muted);font-size:12px}
-  .osmlink{display:inline-block;margin-top:6px;font-size:11.5px}
-  /* ---- modal ---- */
+  .popact{display:flex;gap:10px;margin-top:7px;font-size:11.5px}
+  .popact a{color:#1e88e5;cursor:pointer}
   #veil{position:absolute;inset:0;z-index:2000;background:rgba(18,25,40,.45);display:none;align-items:center;justify-content:center;padding:16px}
-  #modal{width:340px;max-width:100%;padding:18px}
-  #modal h2{margin:0 0 3px;font-size:16px}
-  #modal p.h{color:var(--muted);font-size:12px;margin:0 0 12px}
-  #modal label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin:9px 0 3px}
-  #modal select,#modal input,#modal textarea{width:100%;padding:8px 9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px}
-  #modal textarea{resize:vertical;min-height:52px}
-  #modal .actions{display:flex;gap:8px;margin-top:14px}
+  .modal{width:360px;max-width:100%;padding:18px;max-height:calc(100vh - 40px);overflow:auto}
+  .modal h2{margin:0 0 3px;font-size:16px}
+  .modal p.h{color:var(--muted);font-size:12px;margin:0 0 12px;line-height:1.45}
+  .modal label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin:9px 0 3px}
+  .modal select,.modal input,.modal textarea{width:100%;padding:8px 9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px}
+  .modal textarea{resize:vertical;min-height:52px}
+  .modal .actions{display:flex;gap:8px;margin-top:14px}
+  .typegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+  .typebtn{border:1px solid var(--line);border-radius:10px;padding:11px 8px;font-size:12.5px;font-weight:600;cursor:pointer;background:#fff;text-align:center;line-height:1.35}
+  .typebtn:hover{border-color:#1e88e5;background:#f4f9ff}
+  .typebtn .em{font-size:20px;display:block;margin-bottom:3px}
   #hp{position:absolute;left:-9999px}
-  #tip{position:absolute;z-index:1500;top:12px;left:50%;transform:translateX(-50%);
-       background:#1c2330;color:#fff;padding:8px 14px;border-radius:20px;font-size:12.5px;display:none;box-shadow:var(--shadow)}
-  .locbtn{background:#fff;width:34px;height:34px;border-radius:8px;box-shadow:var(--shadow);
-          display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px}
-  .attrib{font-size:10px}
+  #tip{position:absolute;z-index:1500;top:12px;left:50%;transform:translateX(-50%);background:#1c2330;color:#fff;padding:8px 14px;border-radius:20px;font-size:12.5px;display:none;box-shadow:var(--shadow)}
+  .locbtn{background:#fff;width:34px;height:34px;border-radius:8px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px}
+  ul.guide{margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.6}
+  ul.guide li{margin-bottom:4px}
   @media (max-width:520px){ #panel{width:calc(100vw - 24px)} }
 </style>
 </head>
@@ -71,12 +70,13 @@
 
 <div id="panel" class="card">
   <h1>💧 Hydration Map <span style="font-size:11px;font-weight:600;color:var(--muted)">BE</span></h1>
-  <p class="sub">Free water, open shops &amp; vending for cyclists. Tap a layer to toggle.</p>
+  <p class="sub">Free water, open shops &amp; drinks for cyclists. Tap a layer to toggle.</p>
 
   <div class="lyr" data-cat="water"><span class="dot" style="background:var(--water)"></span><span class="nm">💧 Free water</span><span class="ct" id="c-water">0</span></div>
-  <div class="lyr" data-cat="vending"><span class="dot" style="background:var(--vending)"></span><span class="nm">🥤 Vending</span><span class="ct" id="c-vending">0</span></div>
+  <div class="lyr" data-cat="vdrinks"><span class="dot" style="background:var(--vdrinks)"></span><span class="nm">🥤 Drinks vending</span><span class="ct" id="c-vdrinks">0</span></div>
+  <div class="lyr" data-cat="vsnacks"><span class="dot" style="background:var(--vsnacks)"></span><span class="nm">🍫 Snacks vending</span><span class="ct" id="c-vsnacks">0</span></div>
   <div class="lyr" data-cat="shop"><span class="dot" style="background:var(--shop)"></span><span class="nm">🏪 Shop</span><span class="ct" id="c-shop">0</span></div>
-  <div class="lyr" data-cat="fuel"><span class="dot" style="background:var(--fuel)"></span><span class="nm">⛽ Fuel station</span><span class="ct" id="c-fuel">0</span></div>
+  <div class="lyr" data-cat="fuel"><span class="dot" style="background:var(--fuel)"></span><span class="nm">⛽ Fuel-station shop</span><span class="ct" id="c-fuel">0</span></div>
   <div class="lyr" data-cat="community"><span class="dot" style="background:var(--community)"></span><span class="nm">📍 Community</span><span class="ct" id="c-community">0</span></div>
 
   <div class="divider"></div>
@@ -85,35 +85,71 @@
 
   <div class="btnrow">
     <button class="btn primary" id="findme">📍 Find me</button>
-    <button class="btn ghost" id="suggest">➕ Suggest</button>
+    <button class="btn ghost" id="addbtn">➕ Add / fix</button>
   </div>
-  <p class="note">Shops show open/closed for <b id="nowlabel">now</b> (incl. Sunday &amp; Belgian holidays). Water points are treated as always open unless tagged otherwise. Data © OpenStreetMap contributors (ODbL); coverage is incomplete.</p>
+  <span class="helplink" id="helplink">❔ How to add or correct spots</span>
+  <p class="note">Shops &amp; fuel show open/closed for <b id="nowlabel">now</b> (incl. Sunday &amp; Belgian holidays). Fuel-station shops are a best-guess from OSM tags — <b>report</b> any without a shop. Data © OpenStreetMap (ODbL); coverage is incomplete.</p>
 </div>
 
-<div id="tip">Click on the map where the spot is…</div>
+<div id="tip">Click on the map at the exact spot…</div>
 
 <div id="veil">
-  <div id="modal" class="card">
-    <h2>Suggest a spot</h2>
-    <p class="h">Add a water point, vending machine or shop we’re missing.</p>
+  <!-- ADD modal -->
+  <div class="modal card" id="m-add" style="display:none">
+    <h2>Add a spot</h2>
+    <p class="h">What do you want to add? Please only add things that are open to the public.</p>
     <input type="text" id="hp" tabindex="-1" autocomplete="off" aria-hidden="true"/>
-    <label>Type</label>
-    <select id="f-cat">
-      <option value="water">💧 Free water (tap / fountain)</option>
-      <option value="vending">🥤 Vending machine</option>
-      <option value="shop">🏪 Shop</option>
-      <option value="fuel">⛽ Fuel station</option>
-    </select>
-    <label>Name (optional)</label>
-    <input type="text" id="f-name" maxlength="80" placeholder="e.g. Cemetery tap, Delhaize, Coke machine"/>
-    <label>Note (optional) — hours, what it sells, how to find it</label>
-    <textarea id="f-note" maxlength="280" placeholder="e.g. 24/7 outdoor tap left of the church"></textarea>
-    <div class="kv" id="f-loc" style="margin-top:8px"></div>
-    <div class="actions">
-      <button class="btn ghost" id="f-cancel">Cancel</button>
-      <button class="btn primary" id="f-submit">Submit</button>
+    <div class="typegrid">
+      <div class="typebtn" data-type="vdrinks"><span class="em">🥤</span>Drinks vending machine</div>
+      <div class="typebtn" data-type="shop"><span class="em">🏪</span>Shop (open to public)</div>
+      <div class="typebtn" data-type="fuel"><span class="em">⛽</span>Petrol station <b>with a shop</b></div>
+      <div class="typebtn" data-type="water"><span class="em">💧</span>Free water point / tap</div>
     </div>
-    <p class="note" id="f-msg"></p>
+    <p class="note">Not bread machines or farm-only automats — those are left off this map on purpose.</p>
+    <div class="actions"><button class="btn ghost" data-close>Cancel</button></div>
+  </div>
+
+  <!-- ADD details modal -->
+  <div class="modal card" id="m-add2" style="display:none">
+    <h2 id="a2-title">Add a spot</h2>
+    <p class="h" id="a2-loc"></p>
+    <label>Name (optional)</label>
+    <input type="text" id="a2-name" maxlength="80" placeholder="e.g. Coke machine at sports hall / Delhaize"/>
+    <label id="a2-notelabel">Note (optional) — anything useful</label>
+    <textarea id="a2-note" maxlength="280" placeholder="e.g. cold drinks, 24/7, left of the entrance"></textarea>
+    <div class="actions">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="a2-submit">Submit</button>
+    </div>
+    <p class="note" id="a2-msg"></p>
+  </div>
+
+  <!-- REPORT modal -->
+  <div class="modal card" id="m-report" style="display:none">
+    <h2>Report a problem</h2>
+    <p class="h" id="r-what"></p>
+    <label>What's wrong?</label>
+    <select id="r-reason"></select>
+    <label>Note (optional)</label>
+    <textarea id="r-note" maxlength="200" placeholder="anything that helps us verify"></textarea>
+    <div class="actions">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="r-submit">Send report</button>
+    </div>
+    <p class="note" id="r-msg"></p>
+  </div>
+
+  <!-- HELP modal -->
+  <div class="modal card" id="m-help" style="display:none">
+    <h2>How to add or correct spots</h2>
+    <p class="h">This map is community-maintained. The easiest ways to help:</p>
+    <ul class="guide">
+      <li><b>➕ Add / fix</b> → pick a type → click the exact spot on the map → submit. Best for a <b>drinks machine</b>, a <b>shop</b>, a <b>petrol station with a shop</b>, or a <b>water tap</b> you know.</li>
+      <li><b>Fix an existing spot:</b> click its pin, then <b>⚑ Report</b> — e.g. “no shop here”, “doesn't exist anymore”, or “wrong info”.</li>
+      <li>Every submission is checked by the maintainer before it's trusted, so nothing you or anyone else adds can break the map.</li>
+      <li>To improve the underlying data for <i>every</i> map, add it straight to <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">OpenStreetMap</a> — the <a href="https://streetcomplete.app/" target="_blank" rel="noopener">StreetComplete</a> app makes this a 2-tap job while you're out.</li>
+    </ul>
+    <div class="actions"><button class="btn primary" data-close>Got it</button></div>
   </div>
 </div>
 
@@ -121,172 +157,184 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/opening_hours@3.8.0/opening_hours+deps.min.js"></script>
 <script>
-/* ---------- data ----------
-   Each POI = [lat, lon, cat, sub, name, oh]
-   cat: water | vending | shop | fuel      oh: opening_hours string ('' = unknown) */
+/* ---------- data ----------  POI = [lat, lon, cat, sub, name, oh]
+   cat: water | vdrinks | vsnacks | shop | fuel   (community added at runtime) */
 const POIS = __DATA__;
-const COLORS = {water:'#1e88e5', vending:'#f57c00', shop:'#2e9e3f', fuel:'#8e44ad', community:'#d81b8c'};
-const LABELS = {water:'Free water', vending:'Vending machine', shop:'Shop', fuel:'Fuel station', community:'Community suggestion'};
+const COLORS = {water:'#1e88e5', vdrinks:'#f57c00', vsnacks:'#c98a00', shop:'#2e9e3f', fuel:'#8e44ad', community:'#d81b8c'};
+const LABELS = {water:'Free water', vdrinks:'Drinks vending', vsnacks:'Snacks vending', shop:'Shop', fuel:'Fuel-station shop', community:'Community suggestion'};
 const SUBLABEL = {drinking_water:'Drinking water point', water_tap:'Water tap', spring:'Spring (drinkable)', fountain:'Drinkable fountain',
-                  convenience:'Convenience store', supermarket:'Supermarket', kiosk:'Kiosk', fuel:'Fuel station'};
+                  drinks:'Drinks machine', snacks:'Snacks machine', convenience:'Convenience store', supermarket:'Supermarket', kiosk:'Kiosk', fuel:'Petrol station (likely has a shop)'};
+const cats = ['water','vdrinks','vsnacks','shop','fuel','community'];
+const DEFAULT_OFF = {vsnacks:true};   // snacks layer starts hidden
 
 const map = L.map('map', {zoomControl:true}).setView([50.85, 4.35], 8);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  {maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', className:''}).addTo(map);
+  {maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
 map.attributionControl.setPrefix('Hydration Map');
+window.map = map;   // exposed for debugging / power-user scripting
 
-/* one cluster group per category */
-const cats = ['water','vending','shop','fuel','community'];
-const groups = {}; const markers = {}; const enabled = {};
+const groups = {}, markers = {}, enabled = {};
 cats.forEach(c=>{
   groups[c] = L.markerClusterGroup({maxClusterRadius:50, chunkedLoading:true,
-    iconCreateFunction: cl => L.divIcon({
-      html:`<div style="background:${COLORS[c]}">${cl.getChildCount()}</div>`,
-      className:'hm-cluster', iconSize:[34,34]})});
-  markers[c] = []; enabled[c] = true;
+    iconCreateFunction: cl => L.divIcon({html:`<div style="background:${COLORS[c]}">${cl.getChildCount()}</div>`, className:'hm-cluster', iconSize:[34,34]})});
+  markers[c] = []; enabled[c] = !DEFAULT_OFF[c];
 });
-// cluster bubble style
 const st=document.createElement('style');
-st.textContent='.hm-cluster div{width:34px;height:34px;border-radius:50%;color:#fff;font-weight:700;'+
-  'display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);opacity:.92}';
+st.textContent='.hm-cluster div{width:34px;height:34px;border-radius:50%;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);opacity:.92}';
 document.head.appendChild(st);
 
 function ohObj(oh){ if(!oh) return null; try{ return new opening_hours(oh,{address:{country_code:'be'}}); }catch(e){ return null; } }
-function osmSearchLink(lat,lon){ return `https://www.openstreetmap.org/#map=19/${lat}/${lon}`; }
-function osmNoteLink(lat,lon,text){ return `https://www.openstreetmap.org/note/new#map=19/${lat}/${lon}&layers=N`; }
+const esc = s => (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-function makeMarker(p, idx){
+function makeMarker(p){
   const [lat,lon,cat,sub,name,oh] = p;
+  const status = p[6];   // only present for community pins ('new'|'approved')
   const m = L.circleMarker([lat,lon], {radius:6, color:'#fff', weight:1.5, fillColor:COLORS[cat], fillOpacity:.92});
-  m._hm = {lat,lon,cat,sub,name,oh, state:undefined};
+  m._hm = {lat,lon,cat,sub,name,oh,status,state:undefined};
   m.on('click', ()=>{
     const d=m._hm; let badge='';
-    const o = ohObj(d.oh);
-    if (cat==='water' && !d.oh){ badge = `<span class="badge b-open">Always open</span>`; }
-    else if (o){ const open=o.getState(); const nx=o.getNextChange();
-      badge = open ? `<span class="badge b-open">Open now</span>` : `<span class="badge b-closed">Closed now</span>`;
-      if (nx) badge += ` <span class="kv">${open?'until':'opens'} ${nx.toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'})}</span>`;
-    } else { badge = `<span class="badge b-unk">Hours unknown</span>`; }
-    const html = `<div class="pt">${d.name||SUBLABEL[d.sub]||LABELS[cat]}</div>`
-      + `<div class="kv">${LABELS[cat]}${d.sub&&SUBLABEL[d.sub]&&SUBLABEL[d.sub]!==d.name?' · '+SUBLABEL[d.sub]:''}</div>`
+    if (cat==='community'){
+      badge = d.status==='approved' ? '<span class="badge b-verified">✓ Verified by maintainer</span>' : '<span class="badge b-unk">Community · unverified</span>';
+    } else if (cat==='water' && !d.oh){ badge = '<span class="badge b-open">Usually always open</span>'; }
+    else { const o=ohObj(d.oh);
+      if (o){ const open=o.getState(), nx=o.getNextChange();
+        badge = open ? '<span class="badge b-open">Open now</span>' : '<span class="badge b-closed">Closed now</span>';
+        if (nx) badge += ` <span class="kv">${open?'until':'opens'} ${nx.toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'})}</span>`;
+      } else badge = '<span class="badge b-unk">Hours unknown</span>'; }
+    const subtxt = SUBLABEL[d.sub] || LABELS[cat];
+    const nmeEnc = encodeURIComponent(d.name||subtxt);
+    let html = `<div class="pt">${esc(d.name)||subtxt}</div>`
+      + `<div class="kv">${LABELS[cat]}${(SUBLABEL[d.sub]&&SUBLABEL[d.sub]!==d.name)?' · '+SUBLABEL[d.sub]:''}</div>`
       + `<div>${badge}</div>`
-      + (d.oh?`<div class="kv" style="margin-top:3px">🕑 ${d.oh}</div>`:'')
-      + `<a class="osmlink" href="${d.cat==='community'?'#':osmSearchLink(lat,lon)}" target="_blank" rel="noopener">${d.cat==='community'?'Community suggestion (unverified)':'View / improve on OpenStreetMap ↗'}</a>`;
+      + (d.oh?`<div class="kv" style="margin-top:3px">🕑 ${esc(d.oh)}</div>`:'');
+    html += `<div class="popact">`
+      + `<a onclick="hmReport(${lat},${lon},'${cat}','${nmeEnc}')">⚑ Report a problem</a>`
+      + (cat!=='community'?` · <a href="https://www.openstreetmap.org/#map=19/${lat}/${lon}" target="_blank" rel="noopener">OSM ↗</a>`:'')
+      + `</div>`;
     m.bindPopup(html).openPopup();
   });
   markers[cat].push(m);
   return m;
 }
 
-/* build all markers */
 POIS.forEach(makeMarker);
-
-/* counts */
 cats.forEach(c=>{ const el=document.getElementById('c-'+c); if(el) el.textContent = markers[c].length.toLocaleString(); });
+cats.forEach(c=>{ if(DEFAULT_OFF[c]){ const el=document.querySelector(`.lyr[data-cat="${c}"]`); if(el) el.classList.add('off'); }});
 
-/* render according to filters */
-let onlyOpen = false;
-function passes(m){
-  if (!enabled[m._hm.cat]) return false;
-  if (onlyOpen){
-    if (m._hm.state===false) return false; // known closed → hide
-  }
-  return true;
-}
+let onlyOpen=false;
+function passes(m){ if(!enabled[m._hm.cat]) return false; if(onlyOpen && m._hm.state===false) return false; return true; }
 function refresh(){
   cats.forEach(c=>{
     groups[c].clearLayers();
-    if (!enabled[c]) { map.removeLayer(groups[c]); return; }
-    const vis = markers[c].filter(passes);
-    groups[c].addLayers(vis);
-    if (!map.hasLayer(groups[c])) map.addLayer(groups[c]);
+    if(!enabled[c]){ if(map.hasLayer(groups[c])) map.removeLayer(groups[c]); return; }
+    groups[c].addLayers(markers[c].filter(passes));
+    if(!map.hasLayer(groups[c])) map.addLayer(groups[c]);
   });
 }
 refresh();
 
-/* layer toggles */
 document.querySelectorAll('.lyr').forEach(el=>{
-  const c = el.dataset.cat;
+  const c=el.dataset.cat;
   el.addEventListener('click', ()=>{ enabled[c]=!enabled[c]; el.classList.toggle('off',!enabled[c]); refresh(); });
 });
 
-/* ---- opening-hours evaluation (chunked, non-blocking) ---- */
-const nowLabel = new Date().toLocaleString('en-GB',{weekday:'long',hour:'2-digit',minute:'2-digit'});
-document.getElementById('nowlabel').textContent = nowLabel;
+/* opening-hours evaluation, chunked */
 const idle = fn => (window.requestIdleCallback ? requestIdleCallback(fn,{timeout:200}) : setTimeout(fn,1));
+document.getElementById('nowlabel').textContent = new Date().toLocaleString('en-GB',{weekday:'long',hour:'2-digit',minute:'2-digit'});
 const toEval = [].concat(...cats.map(c=>markers[c])).filter(m=>m._hm.oh);
-let ei=0;
-const ohStatus=document.getElementById('ohstatus');
+let ei=0; const ohStatus=document.getElementById('ohstatus');
 function evalChunk(){
-  const end=Math.min(ei+400, toEval.length);
-  for(;ei<end;ei++){ const m=toEval[ei]; const o=ohObj(m._hm.oh); m._hm.state = o? o.getState() : undefined; }
-  if (ei<toEval.length){ ohStatus.textContent = `Checking opening hours… ${Math.round(100*ei/toEval.length)}%`;
-    idle(evalChunk);
-  } else { ohStatus.textContent = `Opening hours checked for ${toEval.length.toLocaleString()} places.`;
-    if (onlyOpen) refresh(); }
+  const end=Math.min(ei+400,toEval.length);
+  for(;ei<end;ei++){ const m=toEval[ei], o=ohObj(m._hm.oh); m._hm.state = o?o.getState():undefined; }
+  if(ei<toEval.length){ ohStatus.textContent=`Checking opening hours… ${Math.round(100*ei/toEval.length)}%`; idle(evalChunk); }
+  else { ohStatus.textContent=`Opening hours checked for ${toEval.length.toLocaleString()} places.`; if(onlyOpen) refresh(); }
 }
 idle(evalChunk);
-
 document.getElementById('onlyopen').addEventListener('change', e=>{ onlyOpen=e.target.checked; refresh(); });
 
-/* ---- geolocation ---- */
+/* geolocation */
 let meMarker=null, meCircle=null;
-const LocBtn = L.Control.extend({options:{position:'topright'},
-  onAdd:function(){ const d=L.DomUtil.create('div','locbtn'); d.innerHTML='📍'; d.title='Find my location';
-    L.DomEvent.on(d,'click',L.DomEvent.stop).on(d,'click',locate); return d; }});
+const LocBtn = L.Control.extend({options:{position:'topright'}, onAdd:function(){ const d=L.DomUtil.create('div','locbtn'); d.innerHTML='📍'; d.title='Find my location'; L.DomEvent.on(d,'click',L.DomEvent.stop).on(d,'click',locate); return d; }});
 map.addControl(new LocBtn());
-function locate(){ map.locate({setView:true, maxZoom:15, enableHighAccuracy:true}); }
+function locate(){ map.locate({setView:true,maxZoom:15,enableHighAccuracy:true}); }
 document.getElementById('findme').addEventListener('click', locate);
-map.on('locationfound', e=>{
-  if(meMarker) map.removeLayer(meMarker); if(meCircle) map.removeLayer(meCircle);
-  meCircle=L.circle(e.latlng,{radius:e.accuracy, color:'#1e88e5', weight:1, fillColor:'#1e88e5', fillOpacity:.12}).addTo(map);
-  meMarker=L.marker(e.latlng).addTo(map).bindPopup('You are here').openPopup();
-});
-map.on('locationerror', ()=> alert('Could not get your location. Check that location access is allowed for this site.'));
+map.on('locationfound', e=>{ if(meMarker)map.removeLayer(meMarker); if(meCircle)map.removeLayer(meCircle);
+  meCircle=L.circle(e.latlng,{radius:e.accuracy,color:'#1e88e5',weight:1,fillColor:'#1e88e5',fillOpacity:.12}).addTo(map);
+  meMarker=L.marker(e.latlng).addTo(map).bindPopup('You are here').openPopup(); });
+map.on('locationerror', ()=> alert('Could not get your location. Allow location access for this site and try again.'));
 
-/* ---- suggest a spot ---- */
+/* ---------- modals ---------- */
 const veil=document.getElementById('veil'), tip=document.getElementById('tip');
-let picking=false, pick=null;
-document.getElementById('suggest').addEventListener('click', ()=>{
-  picking=true; tip.style.display='block'; map.getContainer().style.cursor='crosshair';
-});
-map.on('click', e=>{
-  if(!picking) return;
-  picking=false; tip.style.display='none'; map.getContainer().style.cursor='';
-  pick=e.latlng;
-  document.getElementById('f-loc').textContent = `📍 ${pick.lat.toFixed(5)}, ${pick.lng.toFixed(5)}`;
-  document.getElementById('f-msg').textContent='';
-  veil.style.display='flex';
-});
-document.getElementById('f-cancel').addEventListener('click', ()=> veil.style.display='none');
-veil.addEventListener('click', e=>{ if(e.target===veil) veil.style.display='none'; });
+const modals=['m-add','m-add2','m-report','m-help'];
+function openModal(id){ modals.forEach(x=>document.getElementById(x).style.display = x===id?'block':'none'); veil.style.display='flex'; }
+function closeModal(){ veil.style.display='none'; }
+veil.addEventListener('click', e=>{ if(e.target===veil) closeModal(); });
+document.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', closeModal));
+document.getElementById('helplink').addEventListener('click', ()=> openModal('m-help'));
 
-document.getElementById('f-submit').addEventListener('click', async ()=>{
-  if(!pick) return;
-  if(document.getElementById('hp').value){ veil.style.display='none'; return; } // honeypot
-  const body={ lat:+pick.lat.toFixed(6), lon:+pick.lng.toFixed(6),
-    cat:document.getElementById('f-cat').value, name:document.getElementById('f-name').value.trim(),
-    note:document.getElementById('f-note').value.trim() };
-  const msg=document.getElementById('f-msg');
-  msg.textContent='Submitting…';
+/* ADD flow */
+let addType=null, pick=null;
+document.getElementById('addbtn').addEventListener('click', ()=> openModal('m-add'));
+document.querySelectorAll('#m-add .typebtn').forEach(b=>{
+  b.addEventListener('click', ()=>{ if(document.getElementById('hp').value){ closeModal(); return; }
+    addType=b.dataset.type; closeModal(); startPick(); });
+});
+function startPick(){ tip.textContent='Click on the map at the exact spot…'; tip.style.display='block'; map.getContainer().style.cursor='crosshair'; pickMode='add'; }
+let pickMode=null;
+map.on('click', e=>{
+  if(pickMode!=='add') return;
+  pickMode=null; tip.style.display='none'; map.getContainer().style.cursor='';
+  pick=e.latlng;
+  document.getElementById('a2-title').textContent = 'Add: '+({vdrinks:'Drinks vending machine',shop:'Shop',fuel:'Petrol station with a shop',water:'Free water point'}[addType]);
+  document.getElementById('a2-loc').textContent = `📍 ${pick.lat.toFixed(5)}, ${pick.lng.toFixed(5)} — looks right? Add any detail below.`;
+  document.getElementById('a2-name').value=''; document.getElementById('a2-note').value=''; document.getElementById('a2-msg').textContent='';
+  openModal('m-add2');
+});
+document.getElementById('a2-submit').addEventListener('click', ()=> submit({
+  kind:'add', cat:addType, lat:+pick.lat.toFixed(6), lon:+pick.lng.toFixed(6),
+  name:document.getElementById('a2-name').value.trim(), note:document.getElementById('a2-note').value.trim()
+}, document.getElementById('a2-msg'), true));
+
+/* REPORT flow */
+let reportRef=null;
+const REASONS = {
+  fuel:[['no_shop',"There's no shop here (pumps only)"],['gone',"Doesn't exist anymore"],['closed_wrong','Opening hours are wrong'],['other','Something else']],
+  _default:[['gone',"Doesn't exist anymore"],['moved','Wrong location'],['closed_wrong','Opening hours are wrong'],['other','Something else']]
+};
+window.hmReport = function(lat,lon,cat,nameEnc){
+  reportRef={lat,lon,cat,name:decodeURIComponent(nameEnc)};
+  document.getElementById('r-what').textContent = `About: ${reportRef.name}`;
+  const sel=document.getElementById('r-reason'); sel.innerHTML='';
+  (REASONS[cat]||REASONS._default).forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); });
+  document.getElementById('r-note').value=''; document.getElementById('r-msg').textContent='';
+  openModal('m-report');
+};
+document.getElementById('r-submit').addEventListener('click', ()=> submit({
+  kind:'report', cat:reportRef.cat, lat:reportRef.lat, lon:reportRef.lon,
+  name:reportRef.name, reason:document.getElementById('r-reason').value, note:document.getElementById('r-note').value.trim()
+}, document.getElementById('r-msg'), false));
+
+/* shared submit → backend, with OSM-note fallback */
+async function submit(body, msgEl, isAdd){
+  msgEl.textContent='Sending…';
   try{
     const r=await fetch('/api/suggestions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    if(!r.ok) throw new Error('bad');
-    msg.innerHTML='✅ Thanks! Your suggestion was saved for review.';
-    addCommunity(body.lat,body.lon,body.cat,'',body.name||'',''); refresh();
-    setTimeout(()=>veil.style.display='none', 1200);
+    if(!r.ok) throw new Error(await r.text());
+    msgEl.innerHTML = isAdd ? '✅ Thanks! Added for the maintainer to verify.' : '✅ Thanks! Report sent for review.';
+    if(isAdd){ const m=makeMarker([body.lat,body.lon,'community',body.cat,body.name||'', '', 'new']); enabled.community=true;
+      document.getElementById('c-community').textContent=markers.community.length.toLocaleString(); refresh(); }
+    setTimeout(closeModal, 1200);
   }catch(err){
-    // backend not deployed → offer OSM fallback
-    msg.innerHTML='Backend not connected. You can add it straight to OpenStreetMap instead: '
-      +`<a href="${osmNoteLink(body.lat,body.lon)}" target="_blank" rel="noopener">open a map note ↗</a>`;
+    const note = `${(body.kind==='report'?'REPORT ('+body.reason+'): ':'ADD: ')}${body.cat} ${body.name||''} ${body.note||''}`.trim();
+    msgEl.innerHTML = 'Backend not connected yet. You can log it straight on OpenStreetMap instead: '
+      + `<a href="https://www.openstreetmap.org/note/new#map=19/${body.lat}/${body.lon}&layers=N" target="_blank" rel="noopener">open a map note ↗</a>`;
   }
-});
-function addCommunity(lat,lon,cat,sub,name,oh){ const m=makeMarker([lat,lon,'community',cat,name,oh]); }
+}
 
 /* load existing community suggestions if backend present */
 fetch('/api/suggestions').then(r=>r.ok?r.json():null).then(list=>{
   if(!Array.isArray(list)) return;
-  list.forEach(s=> makeMarker([s.lat,s.lon,'community',s.cat,s.name||'',s.note||'']));
+  list.forEach(s=> makeMarker([s.lat,s.lon,'community',s.cat,s.name||'', '', s.status||'new']));
   document.getElementById('c-community').textContent = markers.community.length.toLocaleString();
   refresh();
 }).catch(()=>{});

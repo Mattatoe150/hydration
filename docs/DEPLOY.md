@@ -44,14 +44,24 @@ Copy the printed `database_id` into [`wrangler.toml`](../wrangler.toml), replaci
 npx wrangler d1 execute hydration --remote --file=schema.sql
 ```
 
-### 3. Deploy
+### 3. Set your moderation token
+
+The maintainer moderation page (`/admin.html`) is protected by a secret you choose.
+Set it as a Pages secret named `ADMIN_TOKEN`:
+
+```bash
+npx wrangler pages secret put ADMIN_TOKEN --project-name hydration
+# paste a long random string when prompted — this is your admin password
+```
+
+### 4. Deploy
 
 ```bash
 npx wrangler pages deploy . --project-name hydration
 ```
 
 Because `wrangler.toml` contains the `[[d1_databases]]` binding, the Pages
-Function is deployed with `env.DB` bound to your database. Verify:
+Functions deploy with `env.DB` bound to your database. Verify:
 
 ```bash
 curl https://hydration.pages.dev/api/suggestions        # → []  (empty list)
@@ -59,28 +69,36 @@ curl https://hydration.pages.dev/api/suggestions        # → []  (empty list)
 
 Submitting the on-map form now writes rows with `status = 'new'`.
 
-## Moderating suggestions
+## Moderating & certifying (this is your "certify" control)
 
-Suggestions are shown immediately as an **unverified "Community"** layer. To keep
-things clean you approve or reject them by flipping the `status` column:
+Nothing submitted is ever trusted automatically — **adds** appear only as an
+unverified pink "Community" pin, and **reports** are invisible to the public until
+you act. Go to:
 
-```bash
-# see what's pending
-npx wrangler d1 execute hydration --remote \
-  --command "SELECT id, cat, name, note, created FROM suggestions WHERE status='new';"
-
-# approve one
-npx wrangler d1 execute hydration --remote \
-  --command "UPDATE suggestions SET status='approved' WHERE id=1;"
-
-# reject (hides it from the map)
-npx wrangler d1 execute hydration --remote \
-  --command "UPDATE suggestions SET status='rejected' WHERE id=2;"
+```
+https://hydration.pages.dev/admin.html
 ```
 
-Only `new` and `approved` rows are returned to the map. (If you'd rather *not*
-show suggestions until you approve them, change the `WHERE status IN (...)` clause
-in `functions/api/suggestions.js` to `WHERE status = 'approved'`.)
+Enter your `ADMIN_TOKEN`, click **Load pending**, and for each item click
+**Approve** (certifies it — an add becomes a ✓ verified pin), **Reject** (hides
+it), or **Delete**. The token is stored only in your browser.
+
+### Why a bot can't wreck the map
+
+- The base map (water/shops/vending/fuel) is baked into `index.html` from
+  OpenStreetMap and is **never** touched by the API.
+- Public submissions can only *create* `status='new'` rows in a separate layer.
+- Worst case, a spammer creates pending pins you bulk-reject/delete from the admin
+  page. The endpoint also rejects submissions containing links and caps lengths.
+- Want stronger protection? Add [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/)
+  (free) in front of the POST — a few lines in `functions/api/suggestions.js`.
+
+Prefer the command line? You can still moderate directly:
+
+```bash
+npx wrangler d1 execute hydration --remote \
+  --command "UPDATE suggestions SET status='approved' WHERE id=1;"
+```
 
 ## Custom domain
 

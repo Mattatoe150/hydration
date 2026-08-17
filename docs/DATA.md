@@ -17,13 +17,29 @@ All map data comes from **OpenStreetMap** via the
 
 `amenity=vending_machine` in Belgium is dominated by **parking-ticket** and
 **public-transport-ticket** machines (~4,400 of ~6,700). The refresh script keeps
-only consumable machines and buckets them:
+only *drinks* and *snacks*, and **drops bread and farm produce entirely** (this is
+a hydration map, not a groceries map):
 
-- **drinks** — `drinks`, `coffee`, `water`, `soft_drinks`, `juice`, …
-- **food** — `food`, `bread`, `pizza`, `ice_cream`, `sweets`, `milk`, `potatoes`, `farm_products`, …
-- dropped — `parking_tickets`, `public_transport_tickets`, `excrement_bags`, `condoms`, `bicycle_tube`, `newspapers`, `stamps`, `cigarettes`, …
+- **vdrinks** (primary) — `drinks`, `coffee`, `water`, `soft_drinks`, `juice`, …
+- **vsnacks** (optional, off by default) — `sweets`, `ice_cream`, `food`, `pizza`, `snacks`, `chocolate`, …
+- dropped — `bread`, `potatoes`, `farm_products`, `milk`, `eggs`, `fruit`, `vegetables`, `strawberries`, `cheese`, `parking_tickets`, `public_transport_tickets`, `excrement_bags`, `condoms`, …
 
-Exact lists live in `tools/refresh_data.py` (`DRINK` / `FOOD` / `EXCL`).
+Exact lists live in `tools/refresh_data.py` (`DRINK` / `SNACK`).
+
+### Fuel-station "has a shop" heuristic
+
+Most petrol stations are pump-only, and OSM tags the shop directly on only ~1% of
+them — so showing all ~3,020 `amenity=fuel` nodes floods the map with places you
+*can't* actually buy a drink. Instead a fuel node is kept only if:
+
+- it has an explicit `shop=convenience|kiosk|supermarket|yes` tag, **or**
+- it has `opening_hours` **and** is *not* `automated=yes`/`self_service=yes`
+  **and** its brand/name doesn't match an unmanned pattern
+  (`express|easy|automat|self|24/7|g&v|octa|maes`).
+
+This keeps ~320 stations, dominated by full-service brands (TotalEnergies, Q8,
+Shell, Esso). It's a heuristic — the map invites users to **report** any without
+a shop. See `fuel_has_shop()` in `tools/refresh_data.py`.
 
 ## Data model
 
@@ -33,7 +49,7 @@ Each POI is stored as a compact array to keep the file small:
 [ lat, lon, cat, sub, name, opening_hours ]
 ```
 
-- `cat` — `water` | `vending` | `shop` | `fuel`
+- `cat` — `water` | `vdrinks` | `vsnacks` | `shop` | `fuel`
 - `sub` — subtype (e.g. `drinking_water`, `supermarket`, `drinks`)
 - `opening_hours` — raw OSM `opening_hours` string, or `""` if untagged
 

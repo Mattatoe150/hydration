@@ -3,19 +3,18 @@
 Refresh the map data from OpenStreetMap (via the Overpass API) and rebuild
 ../index.html from index_template.html.
 
-Usage:
-    python3 tools/refresh_data.py
+    python3 tools/refresh_data.py            # fetch fresh data, then rebuild
+    python3 tools/refresh_data.py --cached   # rebuild from tools/*.json snapshots
 
-No third-party dependencies — standard library only. Run it from the repo root
-or from tools/; paths are resolved relative to this file.
-
-Data © OpenStreetMap contributors, ODbL. Coverage is crowd-sourced and partial.
+Standard library only. Data © OpenStreetMap contributors, ODbL. Coverage is
+crowd-sourced and partial.
 """
-import json, time, urllib.parse, urllib.request, collections, pathlib, sys
+import json, time, re, urllib.parse, urllib.request, collections, pathlib, sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 ENDPOINT = "https://overpass-api.de/api/interpreter"
+CACHED = "--cached" in sys.argv
 
 WATER_Q = """[out:json][timeout:180];
 area["ISO3166-1"="BE"][admin_level=2]->.be;
@@ -42,11 +41,12 @@ area["ISO3166-1"="BE"][admin_level=2]->.be;
 );
 out center;"""
 
-# Vending machine value → simplified category. Anything in EXCL is dropped
-# (parking/transit tickets, dog-poo bags, condoms, etc. — not "hydration").
-DRINK = {'drinks','coffee','water','drinks;sweets','drinks;food','coffee;drinks','drinks;coffee','beer','wine','soft_drinks','juice'}
-FOOD  = {'food','pizza','bread','ice_cream','potatoes','strawberries','fruit','milk','farm_products','sweets','food;drinks','eggs','vegetables','cheese','meat','honey','snacks','fries','pasta'}
-EXCL  = {'parking_tickets','public_transport_tickets','excrement_bags','bicycle_tube','condoms','chemist','newspapers','fuel','flowers','stamps','gas','cigarettes','tickets','parking','elongated_coin','lockers'}
+# --- Vending: keep only DRINKS (primary) and SNACKS (optional). Bread & farm
+#     produce are intentionally excluded — this map is about drinks, not groceries.
+DRINK = {'drinks', 'coffee', 'water', 'soft_drinks', 'juice', 'cold_drinks', 'hot_drinks', 'milk_coffee'}
+SNACK = {'sweets', 'ice_cream', 'food', 'pizza', 'snacks', 'chocolate', 'chips', 'confectionery', 'crisps'}
+# everything else (bread, potatoes, farm_products, milk, eggs, fruit, vegetables,
+# strawberries, cheese, meat, honey, flowers, parking_tickets, …) is dropped.
 
 
 def overpass(query, tries=5):
@@ -63,6 +63,18 @@ def overpass(query, tries=5):
     raise SystemExit("Overpass API unavailable after several retries.")
 
 
+def load(name, query):
+    """Fetch from Overpass (and cache), or reuse tools/<name>.json with --cached."""
+    cache = HERE / f"{name}.json"
+    if CACHED and cache.exists():
+        print(f"Using cached {cache.name}")
+        return json.loads(cache.read_text())
+    print(f"Fetching {name}…")
+    data = overpass(query)
+    cache.write_text(json.dumps(data))
+    return data
+
+
 def coord(e):
     if 'lat' in e:   return e['lat'], e['lon']
     if 'center' in e: return e['center']['lat'], e['center']['lon']
@@ -75,40 +87,55 @@ def name_of(t):
 
 def vcat(v):
     parts = set(p.strip() for p in (v or '').replace('/', ';').split(';'))
-    if parts & DRINK: return 'drinks'
-    if parts & FOOD:  return 'food'
-    if parts & EXCL:  return None
-    return 'other'
+    if parts & DRINK: return 'vdrinks'
+    if parts & SNACK: return 'vsnacks'
+    return None
+
+
+# --- Fuel: "likely has a shop" heuristic (most stations are pump-only). ---
+# Kept if it has an explicit shop tag, OR it has opening_hours AND is not tagged
+# automated/self-service AND its brand/name isn't an unmanned sub-brand.
+UNMANNED = re.compile(r'express|easy|automat|self|24/7|g&v|octa|maes\b', re.I)
+
+def fuel_has_shop(t):
+    if t.get('shop') in ('convenience', 'kiosk', 'supermarket') or t.get('shop') == 'yes':
+        return True
+    if not t.get('opening_hours'):
+        return False
+    if t.get('automated') == 'yes' or t.get('self_service') == 'yes':
+        return False
+    if UNMANNED.search((t.get('brand', '') + ' ' + t.get('name', ''))):
+        return False
+    return True
 
 
 def build():
     pois = []
 
-    print("Fetching water points…")
-    for e in overpass(WATER_Q)['elements']:
+    for e in load('water', WATER_Q)['elements']:
         c = coord(e)
         if not c: continue
         t = e.get('tags', {})
         sub = ('drinking_water' if t.get('amenity') == 'drinking_water'
                else 'water_tap' if t.get('man_made') == 'water_tap'
                else 'spring' if t.get('natural') == 'spring'
-               else 'fountain' if t.get('amenity') == 'fountain'
-               else 'drinking_water')
+               else 'fountain' if t.get('amenity') == 'fountain' else 'drinking_water')
         pois.append([round(c[0], 5), round(c[1], 5), 'water', sub, name_of(t), t.get('opening_hours', '')])
 
-    print("Fetching vending machines…")
-    for e in overpass(VENDING_Q)['elements']:
+    for e in load('vending', VENDING_Q)['elements']:
         if 'lat' not in e: continue
         t = e.get('tags', {}); cat = vcat(t.get('vending', ''))
         if cat is None: continue
-        pois.append([round(e['lat'], 5), round(e['lon'], 5), 'vending', cat, name_of(t), t.get('opening_hours', '')])
+        sub = 'drinks' if cat == 'vdrinks' else 'snacks'
+        pois.append([round(e['lat'], 5), round(e['lon'], 5), cat, sub, name_of(t), t.get('opening_hours', '')])
 
-    print("Fetching shops & fuel stations…")
-    for e in overpass(SHOPS_Q)['elements']:
+    for e in load('shops', SHOPS_Q)['elements']:
         c = coord(e)
         if not c: continue
         t = e.get('tags', {})
         if t.get('amenity') == 'fuel':
+            if not fuel_has_shop(t):
+                continue
             cat, sub = 'fuel', 'fuel'
         elif t.get('shop') in ('convenience', 'supermarket', 'kiosk'):
             cat, sub = 'shop', t['shop']

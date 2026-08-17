@@ -1,28 +1,31 @@
 /**
- * Cloudflare Pages Function — community spot suggestions.
+ * Public endpoint for community submissions.
  *
- * Routes (served automatically at /api/suggestions):
- *   GET   → returns recent, non-rejected suggestions as JSON
- *   POST  → stores a new suggestion (status "new", awaiting moderation)
+ *   GET  /api/suggestions  → new+approved ADD pins (for the map's Community layer)
+ *   POST /api/suggestions  → store an 'add' or a 'report' (status "new", unverified)
+ *
+ * Nothing posted here is ever trusted automatically: adds appear only as an
+ * unverified "Community" layer, reports are invisible to the public, and the
+ * maintainer approves/rejects everything via /api/moderate (see admin.html).
+ * So a bot can at worst create pending rows you can mass-reject — it can never
+ * alter the OpenStreetMap-derived base data.
  *
  * Requires a D1 database bound as `DB` (see wrangler.toml / docs/DEPLOY.md).
- * If no backend is deployed, the front-end degrades gracefully and offers an
- * "open an OpenStreetMap note" fallback instead.
  */
 
-const CATS = ['water', 'vending', 'shop', 'fuel'];
-
-// Rough bounding box for Belgium — rejects obviously bogus coordinates.
+const CATS = ['water', 'vdrinks', 'vsnacks', 'shop', 'fuel'];
+const REASONS = ['no_shop', 'gone', 'moved', 'closed_wrong', 'other'];
 const BE = { latMin: 49.4, latMax: 51.6, lonMin: 2.5, lonMax: 6.5 };
+const URLISH = /(https?:\/\/|www\.|\[url|<a\s)/i;   // crude spam guard
 
 export async function onRequestGet({ env }) {
-  if (!env.DB) return json([], 200);
+  if (!env.DB) return json([]);
   const { results } = await env.DB.prepare(
-    `SELECT id, lat, lon, cat, name, note, created
+    `SELECT id, lat, lon, cat, name, note, status
        FROM suggestions
-      WHERE status IN ('new', 'approved')
+      WHERE kind = 'add' AND status IN ('new', 'approved')
       ORDER BY created DESC
-      LIMIT 1000`
+      LIMIT 2000`
   ).all();
   return json(results ?? []);
 }
@@ -33,20 +36,24 @@ export async function onRequestPost({ request, env }) {
   let b;
   try { b = await request.json(); } catch { return json({ error: 'invalid json' }, 400); }
 
+  const kind = b.kind === 'report' ? 'report' : 'add';
   const lat = Number(b.lat), lon = Number(b.lon);
   const cat = String(b.cat || '');
   const name = String(b.name || '').trim().slice(0, 80);
   const note = String(b.note || '').trim().slice(0, 280);
+  const reason = kind === 'report' ? String(b.reason || 'other') : null;
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return json({ error: 'bad coords' }, 400);
   if (lat < BE.latMin || lat > BE.latMax || lon < BE.lonMin || lon > BE.lonMax)
     return json({ error: 'coords outside Belgium' }, 400);
   if (!CATS.includes(cat)) return json({ error: 'bad category' }, 400);
+  if (kind === 'report' && !REASONS.includes(reason)) return json({ error: 'bad reason' }, 400);
+  if (URLISH.test(name) || URLISH.test(note)) return json({ error: 'links not allowed' }, 400);
 
   await env.DB.prepare(
-    `INSERT INTO suggestions (lat, lon, cat, name, note, status, created)
-     VALUES (?, ?, ?, ?, ?, 'new', ?)`
-  ).bind(+lat.toFixed(6), +lon.toFixed(6), cat, name, note, new Date().toISOString()).run();
+    `INSERT INTO suggestions (kind, cat, lat, lon, name, note, reason, status, created)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'new', ?)`
+  ).bind(kind, cat, +lat.toFixed(6), +lon.toFixed(6), name, note, reason, new Date().toISOString()).run();
 
   return json({ ok: true });
 }

@@ -7,29 +7,41 @@ data, it combines four things that no existing map puts together:
 | Layer | What it is | Count (2026-08) |
 |-------|------------|-----------------|
 | 💧 **Free water** | drinking-water points, public taps, drinkable springs & fountains | ~1,319 |
-| 🥤 **Vending** | food/drink vending machines (parking & transit ticket machines excluded) | ~1,975 |
+| 🥤 **Drinks vending** | drink vending machines (coffee/soft drinks) | ~445 |
+| 🍫 **Snacks vending** | snack/sweets/ice-cream machines (optional layer, off by default) | ~402 |
 | 🏪 **Shop** | convenience stores, supermarkets & kiosks | ~6,992 |
-| ⛽ **Fuel station** | fuel stations (many have 24/7 shops) | ~3,023 |
-| 📍 **Community** | spots suggested by users (optional backend) | grows over time |
+| ⛽ **Fuel-station shop** | fuel stations that *likely* have a shop (heuristic, see below) | ~323 |
+| 📍 **Community** | spots suggested by users, once approved (optional backend) | grows over time |
 
 **Why it exists:** vending machines alone are too sparse and rarely tagged as
 24/7, so for a guaranteed cold drink you want shops and fuel stations — but those
 close, especially on Sundays. This map shows **open/closed right now** (including
 Sunday and Belgian public holidays) so you can plan a hot-weather ride.
 
+**Deliberately excluded:** bread machines and farm-only automats (potatoes, milk,
+eggs…) — this is a drinks/hydration map, not a groceries map.
+
+**The fuel-station heuristic:** most petrol stations are pump-only with no shop,
+and OSM almost never tags the shop directly (only ~1% do). So a station is shown
+as a "fuel-station shop" only if it has an explicit shop tag, **or** it has
+opening hours *and* isn't tagged automated/self-service *and* isn't an unmanned
+sub-brand (Express/Easy/…). That cuts ~3,020 raw fuel nodes down to ~320 that
+plausibly sell a drink. It's a best guess — users can **report** any that are wrong.
+
 ## Features
 
 - Colour-coded, labelled layers you can toggle on/off
 - **Open-now** evaluation of `opening_hours` (via [opening_hours.js](https://github.com/opening-hours/opening_hours.js)), with an "only show open right now" filter
 - **Find me** — geolocation button
-- **Suggest a spot** — click the map to propose a missing water point, machine or shop
-- Marker clustering, so 13k+ points stay fast and legible
+- **Add / fix** — a guided form to add a spot (drinks machine, shop, petrol-with-shop, or water) or to **report** a problem on an existing one ("no shop here", "doesn't exist anymore", "wrong hours")
+- **Maintainer moderation** — everything submitted stays an unverified "Community" pin (or, for reports, invisible) until you approve it at [`/admin.html`](admin.html); nothing a user or bot submits can alter the base map
+- Marker clustering, so ~9.5k points stay fast and legible
 - Single self-contained `index.html` (data embedded) — trivially hostable
 
 ## Tech
 
-- **Front-end:** one static `index.html` — [Leaflet](https://leafletjs.com) + MarkerCluster + opening_hours.js (from CDN), OSM raster tiles. All ~13,300 POIs are embedded in the file.
-- **Suggestions backend (optional):** a [Cloudflare Pages Function](functions/api/suggestions.js) backed by [D1](https://developers.cloudflare.com/d1/). Without it, the map still works fully and the suggest form falls back to opening an OpenStreetMap note.
+- **Front-end:** one static `index.html` — [Leaflet](https://leafletjs.com) + MarkerCluster + opening_hours.js (from CDN), OSM raster tiles. All ~9,500 POIs are embedded in the file.
+- **Suggestions backend (optional):** [Cloudflare Pages Functions](functions/api/) backed by [D1](https://developers.cloudflare.com/d1/) — `api/suggestions` (public add/report) and `api/moderate` (token-protected approve/reject, used by `admin.html`). Without a backend the map still works fully and the form falls back to opening an OpenStreetMap note.
 - **Data refresh:** [`tools/refresh_data.py`](tools/refresh_data.py) re-pulls OSM via the Overpass API and rebuilds `index.html`. Standard-library Python, no dependencies.
 
 ## Run locally
