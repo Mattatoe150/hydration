@@ -1,0 +1,10 @@
+# wrangler / Cloudflare
+.wrangler/
+node_modules/
+.dev.vars
+
+# OS
+.DS_Store
+
+# local Overpass snapshots (index.html is the built artifact and IS committed)
+tools/*.json
