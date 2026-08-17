@@ -1,7 +1,8 @@
 # 💧 Hydration Map — Belgium
 
-An interactive map of places to **refill water** or **buy a cold drink** while
-cycling in Belgium/Flanders. Built from open [OpenStreetMap](https://www.openstreetmap.org)
+An interactive map of places to **refill water** or **buy a cold drink** in
+Belgium/Flanders — for anyone who's thirsty (walking, cycling, running, or just
+out and about). Built from open [OpenStreetMap](https://www.openstreetmap.org)
 data, it combines four things that no existing map puts together:
 
 | Layer | What it is | Count (2026-08) |
@@ -16,7 +17,7 @@ data, it combines four things that no existing map puts together:
 **Why it exists:** vending machines alone are too sparse and rarely tagged as
 24/7, so for a guaranteed cold drink you want shops and fuel stations — but those
 close, especially on Sundays. This map shows **open/closed right now** (including
-Sunday and Belgian public holidays) so you can plan a hot-weather ride.
+Sunday and Belgian public holidays) so you can plan ahead on a hot day.
 
 **Deliberately excluded:** bread machines and farm-only automats (potatoes, milk,
 eggs…) — this is a drinks/hydration map, not a groceries map.
@@ -34,7 +35,7 @@ plausibly sell a drink. It's a best guess — users can **report** any that are 
 - **Open-now** evaluation of `opening_hours` (via [opening_hours.js](https://github.com/opening-hours/opening_hours.js)), with an "only show open right now" filter
 - **Find me** — geolocation button
 - **Add / fix** — a guided form to add a spot (drinks machine, shop, petrol-with-shop, or water) or to **report** a problem on an existing one ("no shop here", "doesn't exist anymore", "wrong hours")
-- **Maintainer moderation** — everything submitted stays an unverified "Community" pin (or, for reports, invisible) until you approve it at [`/admin.html`](admin.html); nothing a user or bot submits can alter the base map
+- **Maintainer moderation & upstreaming** — everything submitted stays an unverified "Community" pin (or, for reports, invisible) until you approve it at [`/admin.html`](admin.html); nothing a user or bot submits can alter the base map. From the admin page, one click (**✎ Add to OSM**) opens the OpenStreetMap editor at the spot so you can push a verified pin *upstream* into OSM — where every map benefits and your own map picks it up on the next data refresh. Submitters consent to ODbL, so this stays licence-clean.
 - Marker clustering, so ~9.5k points stay fast and legible
 - Single self-contained `index.html` (data embedded) — trivially hostable
 

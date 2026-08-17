@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-<title>Hydration Map · Belgium — water, shops & vending for cyclists</title>
+<title>Hydration Map · Belgium — free water, open shops & drinks</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%A7%3C/text%3E%3C/svg%3E"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
@@ -70,7 +70,7 @@
 
 <div id="panel" class="card">
   <h1>💧 Hydration Map <span style="font-size:11px;font-weight:600;color:var(--muted)">BE</span></h1>
-  <p class="sub">Free water, open shops &amp; drinks for cyclists. Tap a layer to toggle.</p>
+  <p class="sub">Free water, open shops &amp; drinks for anyone who's thirsty. Tap a layer to toggle.</p>
 
   <div class="lyr" data-cat="water"><span class="dot" style="background:var(--water)"></span><span class="nm">💧 Free water</span><span class="ct" id="c-water">0</span></div>
   <div class="lyr" data-cat="vdrinks"><span class="dot" style="background:var(--vdrinks)"></span><span class="nm">🥤 Drinks vending</span><span class="ct" id="c-vdrinks">0</span></div>
@@ -117,6 +117,7 @@
     <input type="text" id="a2-name" maxlength="80" placeholder="e.g. Coke machine at sports hall / Delhaize"/>
     <label id="a2-notelabel">Note (optional) — anything useful</label>
     <textarea id="a2-note" maxlength="280" placeholder="e.g. cold drinks, 24/7, left of the entrance"></textarea>
+    <p class="note">By submitting, you agree this spot may be added to <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL). Prefer to add it upstream yourself? <a id="a2-osm" href="#" target="_blank" rel="noopener">Open an OSM note ↗</a></p>
     <div class="actions">
       <button class="btn ghost" data-close>Cancel</button>
       <button class="btn primary" id="a2-submit">Submit</button>
@@ -287,6 +288,7 @@ map.on('click', e=>{
   pick=e.latlng;
   document.getElementById('a2-title').textContent = 'Add: '+({vdrinks:'Drinks vending machine',shop:'Shop',fuel:'Petrol station with a shop',water:'Free water point'}[addType]);
   document.getElementById('a2-loc').textContent = `📍 ${pick.lat.toFixed(5)}, ${pick.lng.toFixed(5)} — looks right? Add any detail below.`;
+  document.getElementById('a2-osm').href = `https://www.openstreetmap.org/note/new#map=19/${pick.lat.toFixed(5)}/${pick.lng.toFixed(5)}&layers=N`;
   document.getElementById('a2-name').value=''; document.getElementById('a2-note').value=''; document.getElementById('a2-msg').textContent='';
   openModal('m-add2');
 });

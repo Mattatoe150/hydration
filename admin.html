@@ -36,7 +36,7 @@
   <button id="load">Load pending</button>
 </header>
 <main>
-  <div class="msg" id="msg">Enter your admin token and click “Load pending”. The token is stored only in this browser.</div>
+  <div class="msg" id="msg">Enter your admin token and click “Load pending”. The token is stored only in this browser.<br><b>Approve</b> certifies a spot · <b>✎ Add to OSM</b> pushes it upstream into OpenStreetMap (then <b>Delete</b> the pending pin — it'll come back from OSM on the next data refresh).</div>
   <div id="list"></div>
 </main>
 <script>
@@ -84,7 +84,9 @@ function render(rows){
          <button class="approve">${r.kind==='report'?'Accept':'Approve'}</button>
          <button class="reject">Reject</button>
          <button class="del">Delete</button>
-         <a href="https://www.openstreetmap.org/#map=19/${r.lat}/${r.lon}" target="_blank" rel="noopener">view on OSM ↗</a>
+         ${r.kind==='add'
+           ? `<a href="https://www.openstreetmap.org/edit#map=19/${r.lat}/${r.lon}" target="_blank" rel="noopener">✎ Add to OSM ↗</a>`
+           : `<a href="https://www.openstreetmap.org/#map=19/${r.lat}/${r.lon}" target="_blank" rel="noopener">view on OSM ↗</a>`}
        </div>`;
     el.querySelector('.approve').onclick = ()=> act(r.id,'approve',el);
     el.querySelector('.reject').onclick  = ()=> act(r.id,'reject',el);

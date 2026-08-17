@@ -93,6 +93,22 @@ it), or **Delete**. The token is stored only in your browser.
 - Want stronger protection? Add [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/)
   (free) in front of the POST — a few lines in `functions/api/suggestions.js`.
 
+### Pushing spots upstream to OpenStreetMap (recommended)
+
+Approving a spot certifies it *on your map*. To make it permanent and benefit
+every map, push it into OpenStreetMap:
+
+1. On a pending **ADD**, click **✎ Add to OSM ↗** — this opens the OSM iD editor
+   centred on the exact coordinate.
+2. Place the node and tag it (e.g. `amenity=vending_machine` + `vending=drinks`,
+   or `amenity=drinking_water`), then **Save**.
+3. Back in the admin page, **Delete** the pending pin — it'll reappear from OSM
+   on your next `python3 tools/refresh_data.py`, now as trusted base data.
+
+Because the submit form asks contributors to agree their spot may go to OSM
+(ODbL), this is licence-clean. Treat community adds as leads you verify, not as a
+bulk import — OSM discourages unreviewed mass uploads.
+
 Prefer the command line? You can still moderate directly:
 
 ```bash
