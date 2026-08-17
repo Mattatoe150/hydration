@@ -70,6 +70,18 @@ See **[docs/DATA.md](docs/DATA.md)** for the data sources and how to rebuild.
 python3 tools/refresh_data.py
 ```
 
+## Support
+
+The map carries a **☕ Buy me a coffee** button to help cover running costs (the
+domain and the time spent approving submissions). **Anything collected above those
+costs is donated to [Join For Water](https://joinforwater.ngo/en/)** — a Belgian
+charity working on clean water.
+
+To wire up the button: create a free page at [buymeacoffee.com](https://www.buymeacoffee.com/),
+then replace `YOUR_HANDLE` in the `☕ Buy me a coffee` link inside
+[`tools/index_template.html`](tools/index_template.html) and rebuild
+(`python3 tools/refresh_data.py`).
+
 ## Data & licence
 
 Map data © OpenStreetMap contributors, licensed [ODbL](https://opendatacommons.org/licenses/odbl/).
