@@ -8,10 +8,11 @@
  * Send the token in the `x-admin-token` header (admin.html does this for you).
  * Set it with:  npx wrangler pages secret put ADMIN_TOKEN
  */
+import { json, timingEqual } from '../_util.js';
 
 function authed(request, env) {
   const t = request.headers.get('x-admin-token') || '';
-  return env.ADMIN_TOKEN && t.length > 0 && t === env.ADMIN_TOKEN;
+  return !!env.ADMIN_TOKEN && timingEqual(t, env.ADMIN_TOKEN);
 }
 
 export async function onRequestGet({ request, env }) {
@@ -38,20 +39,13 @@ export async function onRequestPost({ request, env }) {
   if (!Number.isInteger(id)) return json({ error: 'bad id' }, 400);
 
   if (action === 'approve') {
-    await env.DB.prepare("UPDATE suggestions SET status='approved' WHERE id=?").bind(id).run();
+    await env.DB.prepare("UPDATE suggestions SET status='approved', iphash=NULL WHERE id=?").bind(id).run();
   } else if (action === 'reject') {
-    await env.DB.prepare("UPDATE suggestions SET status='rejected' WHERE id=?").bind(id).run();
+    await env.DB.prepare("UPDATE suggestions SET status='rejected', iphash=NULL WHERE id=?").bind(id).run();
   } else if (action === 'delete') {
     await env.DB.prepare("DELETE FROM suggestions WHERE id=?").bind(id).run();
   } else {
     return json({ error: 'bad action' }, 400);
   }
   return json({ ok: true });
-}
-
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
-  });
 }

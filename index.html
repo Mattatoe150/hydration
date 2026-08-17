@@ -18,8 +18,12 @@
   #map{position:absolute;inset:0}
   .card{background:var(--bg);border-radius:14px;box-shadow:var(--shadow)}
   #panel{position:absolute;z-index:1000;top:12px;left:12px;width:270px;max-width:calc(100vw - 24px);padding:14px 15px 12px;font-size:13px}
-  #panel h1{margin:0 0 2px;font-size:16px;display:flex;align-items:center;gap:7px}
-  #panel .sub{color:var(--muted);font-size:11.5px;margin:0 0 10px;line-height:1.4}
+  #phead{display:flex;align-items:center;gap:7px}
+  #panel h1{margin:0;font-size:16px;display:flex;align-items:center;gap:7px;flex:1}
+  #collapse{display:none;border:0;background:#eef2f7;color:var(--fg);width:32px;height:32px;border-radius:8px;font-size:15px;cursor:pointer;flex:0 0 auto}
+  #panel.collapsed #pbody{display:none}
+  #panel.collapsed .btnrow{margin-top:10px}
+  #panel .sub{color:var(--muted);font-size:11.5px;margin:10px 0;line-height:1.4}
   .lyr{display:flex;align-items:center;gap:9px;padding:5px 6px;border-radius:8px;cursor:pointer;user-select:none}
   .lyr:hover{background:#f4f7fb}
   .lyr .dot{width:15px;height:15px;border-radius:50%;flex:0 0 auto;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
@@ -62,33 +66,52 @@
   .locbtn{background:#fff;width:34px;height:34px;border-radius:8px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px}
   ul.guide{margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.6}
   ul.guide li{margin-bottom:4px}
-  @media (max-width:520px){ #panel{width:calc(100vw - 24px)} }
+  @media (max-width:640px){
+    #panel{width:calc(100vw - 20px);top:10px;left:10px;padding:12px 13px 10px}
+    #collapse{display:block}
+    #panel h1{font-size:17px}
+    .lyr{padding:9px 6px}          /* bigger tap targets */
+    .btn{padding:13px 8px;font-size:14px}
+    .locbtn{width:42px;height:42px;font-size:20px;border-radius:10px}
+    .leaflet-popup-content{font-size:14px;min-width:190px}
+    .leaflet-control-zoom{display:none}   /* pinch-zoom instead; save space */
+    .modal{width:calc(100vw - 24px)}
+    .typebtn{padding:14px 8px}
+    #tip{font-size:13.5px}
+  }
 </style>
 </head>
 <body>
 <div id="map"></div>
 
 <div id="panel" class="card">
-  <h1>💧 Hydration Map <span style="font-size:11px;font-weight:600;color:var(--muted)">BE</span></h1>
-  <p class="sub">Free water, open shops &amp; drinks for anyone who's thirsty. Tap a layer to toggle.</p>
-
-  <div class="lyr" data-cat="water"><span class="dot" style="background:var(--water)"></span><span class="nm">💧 Free water</span><span class="ct" id="c-water">0</span></div>
-  <div class="lyr" data-cat="vdrinks"><span class="dot" style="background:var(--vdrinks)"></span><span class="nm">🥤 Drinks vending</span><span class="ct" id="c-vdrinks">0</span></div>
-  <div class="lyr" data-cat="vsnacks"><span class="dot" style="background:var(--vsnacks)"></span><span class="nm">🍫 Snacks vending</span><span class="ct" id="c-vsnacks">0</span></div>
-  <div class="lyr" data-cat="shop"><span class="dot" style="background:var(--shop)"></span><span class="nm">🏪 Shop</span><span class="ct" id="c-shop">0</span></div>
-  <div class="lyr" data-cat="fuel"><span class="dot" style="background:var(--fuel)"></span><span class="nm">⛽ Fuel-station shop</span><span class="ct" id="c-fuel">0</span></div>
-  <div class="lyr" data-cat="community"><span class="dot" style="background:var(--community)"></span><span class="nm">📍 Community</span><span class="ct" id="c-community">0</span></div>
-
-  <div class="divider"></div>
-  <label class="toggle"><input type="checkbox" id="onlyopen"/><span>Only show <b>open right now</b></span></label>
-  <div id="ohstatus"></div>
+  <div id="phead">
+    <h1>💧 Hydration Map <span style="font-size:11px;font-weight:600;color:var(--muted)">BE</span></h1>
+    <button id="collapse" aria-label="Collapse panel" title="Collapse">▾</button>
+  </div>
 
   <div class="btnrow">
     <button class="btn primary" id="findme">📍 Find me</button>
     <button class="btn ghost" id="addbtn">➕ Add / fix</button>
   </div>
-  <span class="helplink" id="helplink">❔ How to add or correct spots</span>
-  <p class="note">Shops &amp; fuel show open/closed for <b id="nowlabel">now</b> (incl. Sunday &amp; Belgian holidays). Fuel-station shops are a best-guess from OSM tags — <b>report</b> any without a shop. Data © OpenStreetMap (ODbL); coverage is incomplete.</p>
+
+  <div id="pbody">
+    <p class="sub">Free water, open shops &amp; drinks for anyone who's thirsty. Tap a layer to toggle.</p>
+
+    <div class="lyr" data-cat="water"><span class="dot" style="background:var(--water)"></span><span class="nm">💧 Free water</span><span class="ct" id="c-water">0</span></div>
+    <div class="lyr" data-cat="vdrinks"><span class="dot" style="background:var(--vdrinks)"></span><span class="nm">🥤 Drinks vending</span><span class="ct" id="c-vdrinks">0</span></div>
+    <div class="lyr" data-cat="vsnacks"><span class="dot" style="background:var(--vsnacks)"></span><span class="nm">🍫 Snacks vending</span><span class="ct" id="c-vsnacks">0</span></div>
+    <div class="lyr" data-cat="shop"><span class="dot" style="background:var(--shop)"></span><span class="nm">🏪 Shop</span><span class="ct" id="c-shop">0</span></div>
+    <div class="lyr" data-cat="fuel"><span class="dot" style="background:var(--fuel)"></span><span class="nm">⛽ Fuel-station shop</span><span class="ct" id="c-fuel">0</span></div>
+    <div class="lyr" data-cat="community"><span class="dot" style="background:var(--community)"></span><span class="nm">📍 Community</span><span class="ct" id="c-community">0</span></div>
+
+    <div class="divider"></div>
+    <label class="toggle"><input type="checkbox" id="onlyopen"/><span>Only show <b>open right now</b></span></label>
+    <div id="ohstatus"></div>
+
+    <span class="helplink" id="helplink">❔ How to add or correct spots</span>
+    <p class="note">Shops &amp; fuel show open/closed for <b id="nowlabel">now</b> (incl. Sunday &amp; Belgian holidays). Fuel-station shops are a best-guess from OSM tags — <b>report</b> any without a shop. Data © OpenStreetMap (ODbL); coverage is incomplete.</p>
+  </div>
 </div>
 
 <div id="tip">Click on the map at the exact spot…</div>
@@ -253,16 +276,32 @@ function evalChunk(){
 idle(evalChunk);
 document.getElementById('onlyopen').addEventListener('change', e=>{ onlyOpen=e.target.checked; refresh(); });
 
-/* geolocation */
-let meMarker=null, meCircle=null;
-const LocBtn = L.Control.extend({options:{position:'topright'}, onAdd:function(){ const d=L.DomUtil.create('div','locbtn'); d.innerHTML='📍'; d.title='Find my location'; L.DomEvent.on(d,'click',L.DomEvent.stop).on(d,'click',locate); return d; }});
+/* panel collapse (mobile-friendly) */
+const panel=document.getElementById('panel'), collapseBtn=document.getElementById('collapse');
+function setCollapsed(c){ panel.classList.toggle('collapsed', c); collapseBtn.textContent = c ? '▸' : '▾'; }
+collapseBtn.addEventListener('click', ()=> setCollapsed(!panel.classList.contains('collapsed')));
+if (window.matchMedia('(max-width:640px)').matches) setCollapsed(true);   // start collapsed on phones
+
+/* geolocation — quick auto-locate on load, plus a manual button */
+let meMarker=null, meCircle=null, manualLocate=false;
+const findBtn=document.getElementById('findme');
+const LocBtn = L.Control.extend({options:{position:'topright'}, onAdd:function(){ const d=L.DomUtil.create('div','locbtn'); d.innerHTML='📍'; d.title='Find my location'; L.DomEvent.on(d,'click',L.DomEvent.stop).on(d,'click',()=>locate(true)); return d; }});
 map.addControl(new LocBtn());
-function locate(){ map.locate({setView:true,maxZoom:15,enableHighAccuracy:true}); }
-document.getElementById('findme').addEventListener('click', locate);
-map.on('locationfound', e=>{ if(meMarker)map.removeLayer(meMarker); if(meCircle)map.removeLayer(meCircle);
+function locate(manual){
+  manualLocate = manual;
+  if(manual) findBtn.textContent='📍 Locating…';
+  map.locate({setView:true, maxZoom:16, enableHighAccuracy:true, timeout:10000, maximumAge:60000});
+}
+findBtn.addEventListener('click', ()=>locate(true));
+map.on('locationfound', e=>{
+  if(meMarker)map.removeLayer(meMarker); if(meCircle)map.removeLayer(meCircle);
   meCircle=L.circle(e.latlng,{radius:e.accuracy,color:'#1e88e5',weight:1,fillColor:'#1e88e5',fillOpacity:.12}).addTo(map);
-  meMarker=L.marker(e.latlng).addTo(map).bindPopup('You are here').openPopup(); });
-map.on('locationerror', ()=> alert('Could not get your location. Allow location access for this site and try again.'));
+  meMarker=L.marker(e.latlng).addTo(map).bindPopup('You are here').openPopup();
+  findBtn.textContent='📍 Find me'; manualLocate=false;
+});
+map.on('locationerror', ()=>{ findBtn.textContent='📍 Find me'; if(manualLocate){ manualLocate=false; alert('Could not get your location. Allow location access for this site and try again.'); } });
+// Quick, silent auto-locate on first load (coarse/fast; ignored if blocked or denied).
+map.locate({setView:true, maxZoom:14, enableHighAccuracy:false, timeout:7000, maximumAge:120000});
 
 /* ---------- modals ---------- */
 const veil=document.getElementById('veil'), tip=document.getElementById('tip');
@@ -319,6 +358,7 @@ document.getElementById('r-submit').addEventListener('click', ()=> submit({
 /* shared submit → backend, with OSM-note fallback */
 async function submit(body, msgEl, isAdd){
   msgEl.textContent='Sending…';
+  body.hp = (document.getElementById('hp')||{}).value || '';   // honeypot (bots fill it)
   try{
     const r=await fetch('/api/suggestions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok) throw new Error(await r.text());

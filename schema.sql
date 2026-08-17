@@ -11,8 +11,10 @@ CREATE TABLE IF NOT EXISTS suggestions (
   note    TEXT,
   reason  TEXT,                         -- for reports: no_shop | gone | moved | closed_wrong | other
   status  TEXT NOT NULL DEFAULT 'new',  -- new | approved | rejected
-  created TEXT NOT NULL                 -- ISO-8601 timestamp
+  created TEXT NOT NULL,                -- ISO-8601 timestamp
+  iphash  TEXT                          -- salted hash of submitter IP (rate limiting only; cleared on moderation)
 );
 
 CREATE INDEX IF NOT EXISTS idx_suggestions_status ON suggestions(status);
 CREATE INDEX IF NOT EXISTS idx_suggestions_kind   ON suggestions(kind);
+CREATE INDEX IF NOT EXISTS idx_suggestions_iphash ON suggestions(iphash);

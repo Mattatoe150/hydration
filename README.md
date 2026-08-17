@@ -42,8 +42,8 @@ plausibly sell a drink. It's a best guess — users can **report** any that are 
 ## Tech
 
 - **Front-end:** one static `index.html` — [Leaflet](https://leafletjs.com) + MarkerCluster + opening_hours.js (from CDN), OSM raster tiles. All ~9,500 POIs are embedded in the file.
-- **Suggestions backend (optional):** [Cloudflare Pages Functions](functions/api/) backed by [D1](https://developers.cloudflare.com/d1/) — `api/suggestions` (public add/report) and `api/moderate` (token-protected approve/reject, used by `admin.html`). Without a backend the map still works fully and the form falls back to opening an OpenStreetMap note.
-- **Data refresh:** [`tools/refresh_data.py`](tools/refresh_data.py) re-pulls OSM via the Overpass API and rebuilds `index.html`. Standard-library Python, no dependencies.
+- **Suggestions backend (optional):** [Cloudflare Pages Functions](functions/api/) backed by [D1](https://developers.cloudflare.com/d1/) — `api/suggestions` (public add/report) and `api/moderate` (token-protected approve/reject, used by `admin.html`). Hardened with parameterised queries, strict validation, a honeypot, per-IP rate limiting (hashed IPs, never stored raw), and a constant-time token check. Without a backend the map still works fully and the form falls back to opening an OpenStreetMap note. Details in [docs/DATABASE.md](docs/DATABASE.md).
+- **Data refresh:** [`tools/refresh_data.py`](tools/refresh_data.py) re-pulls OSM via the Overpass API and rebuilds `index.html` — standard-library Python, no dependencies. Runs **daily** via [GitHub Actions](.github/workflows/refresh-data.yml) so the base map stays current; the community database is untouched by it.
 
 ## Run locally
 

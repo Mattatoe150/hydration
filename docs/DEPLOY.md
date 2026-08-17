@@ -54,6 +54,13 @@ npx wrangler pages secret put ADMIN_TOKEN --project-name hydration
 # paste a long random string when prompted — this is your admin password
 ```
 
+Optionally set a private `IP_SALT` too, so the hashed IPs used for rate limiting
+are unguessable:
+
+```bash
+npx wrangler pages secret put IP_SALT --project-name hydration
+```
+
 ### 4. Deploy
 
 ```bash
@@ -115,6 +122,21 @@ Prefer the command line? You can still moderate directly:
 npx wrangler d1 execute hydration --remote \
   --command "UPDATE suggestions SET status='approved' WHERE id=1;"
 ```
+
+## Keeping the base map fresh (daily)
+
+The OpenStreetMap-derived data in `index.html` is rebuilt automatically by
+[`.github/workflows/refresh-data.yml`](../.github/workflows/refresh-data.yml) —
+daily at 04:17 UTC, plus on demand from the repo's **Actions** tab.
+
+- If your Pages project **deploys from Git**, the workflow's commit triggers a
+  redeploy automatically — nothing else to do.
+- If you deploy via **direct upload** (`wrangler pages deploy`), add two repo
+  secrets — `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` — and the workflow
+  will redeploy for you.
+
+See [DATABASE.md](DATABASE.md) for the database, the write path, and the full
+security model.
 
 ## Custom domain
 
