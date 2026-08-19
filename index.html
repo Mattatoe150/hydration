@@ -20,7 +20,7 @@
   #panel{position:absolute;z-index:1000;top:12px;left:12px;width:270px;max-width:calc(100vw - 24px);padding:14px 15px 12px;font-size:13px}
   #phead{display:flex;align-items:center;gap:7px}
   #panel h1{margin:0;font-size:16px;display:flex;align-items:center;gap:7px;flex:1}
-  #collapse{display:none;border:0;background:#eef2f7;color:var(--fg);width:32px;height:32px;border-radius:8px;font-size:15px;cursor:pointer;flex:0 0 auto}
+  #collapse{display:block;border:0;background:#eef2f7;color:var(--fg);width:32px;height:32px;border-radius:8px;font-size:15px;cursor:pointer;flex:0 0 auto}
   #panel.collapsed #pbody{display:none}
   #panel.collapsed .btnrow{margin-top:10px}
   #panel .sub{color:var(--muted);font-size:11.5px;margin:10px 0;line-height:1.4}
@@ -41,7 +41,7 @@
   .btn.ghost{background:#eef2f7;color:var(--fg)}
   .btn.small{padding:6px 10px;font-size:12px;flex:0 0 auto}
   .btn:active{transform:translateY(1px)}
-  .btn.coffee{background:#ffdd00;color:#1c2330;width:100%}
+  .btn.coffee{display:inline-flex;width:auto;background:#ffdd00;color:#1c2330;padding:6px 12px;font-size:11.5px}
   .support{margin-top:12px;padding-top:11px;border-top:1px solid var(--line)}
   .support .note{margin-top:8px}
   .helplink{display:block;margin-top:8px;font-size:11.5px;color:#1e88e5;cursor:pointer;text-align:center}
@@ -71,7 +71,6 @@
   ul.guide li{margin-bottom:4px}
   @media (max-width:640px){
     #panel{width:calc(100vw - 20px);top:10px;left:10px;padding:12px 13px 10px}
-    #collapse{display:block}
     #panel h1{font-size:17px}
     .lyr{padding:9px 6px}          /* bigger tap targets */
     .btn{padding:13px 8px;font-size:14px}
@@ -113,12 +112,12 @@
     <div id="ohstatus"></div>
 
     <span class="helplink" id="helplink">❔ How to add or correct spots</span>
-    <p class="note">Shops &amp; fuel show open/closed for <b id="nowlabel">now</b> (incl. Sunday &amp; Belgian holidays). Fuel-station shops are a best-guess from OSM tags — <b>report</b> any without a shop. Data © OpenStreetMap (ODbL); coverage is incomplete.</p>
+    <p class="note">Shops &amp; fuel show open/closed for <b id="nowlabel">now</b> (incl. Sunday &amp; Belgian holidays). Fuel-station shops are a best-guess from OSM tags — <b>report</b> any without a shop. Data © OpenStreetMap (ODbL); coverage is incomplete — but you can help improve it with <b>➕ Add / fix</b>.</p>
 
     <div class="support">
       <!-- SET YOUR LINK: create a free page at buymeacoffee.com and replace YOUR_HANDLE below. -->
       <a class="btn coffee" id="coffee" href="https://www.buymeacoffee.com/YOUR_HANDLE" target="_blank" rel="noopener">☕ Buy me a coffee</a>
-      <p class="note">Keeps this free map running — the domain and the time spent approving submissions. Everything collected above those running costs is donated to <a href="https://joinforwater.ngo/en/" target="_blank" rel="noopener">Join For Water</a> 💧, a Belgian charity working on clean water.</p>
+      <p class="note">Keeps this free map running — the domain and the time spent approving submissions. Everything collected above those running costs is donated to <a href="https://joinforwater.ngo/en/" target="_blank" rel="noopener">Join For Water</a> 💧, a Belgian charity working on clean water — you can also <a href="https://joinforwater.ngo/en/" target="_blank" rel="noopener">donate to them directly</a> if you prefer.</p>
     </div>
   </div>
 </div>
@@ -289,7 +288,9 @@ document.getElementById('onlyopen').addEventListener('change', e=>{ onlyOpen=e.t
 const panel=document.getElementById('panel'), collapseBtn=document.getElementById('collapse');
 function setCollapsed(c){ panel.classList.toggle('collapsed', c); collapseBtn.textContent = c ? '▸' : '▾'; }
 collapseBtn.addEventListener('click', ()=> setCollapsed(!panel.classList.contains('collapsed')));
-if (window.matchMedia('(max-width:640px)').matches) setCollapsed(true);   // start collapsed on phones
+const mq = window.matchMedia('(max-width:640px)');
+setCollapsed(mq.matches);                              // start collapsed on phones, expanded on desktop
+mq.addEventListener('change', e => setCollapsed(e.matches));   // re-sync if the window is resized
 
 /* geolocation — quick auto-locate on load, plus a manual button */
 let meMarker=null, meCircle=null, manualLocate=false;
