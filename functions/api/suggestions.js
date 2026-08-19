@@ -53,6 +53,7 @@ export async function onRequestPost({ request, env }) {
   const cat = String(b.cat || '');
   const name = String(b.name || '').trim().slice(0, 80);
   const note = String(b.note || '').trim().slice(0, 280);
+  const submitter = String(b.submitter || '').trim().slice(0, 40);
   const reason = kind === 'report' ? String(b.reason || 'other') : null;
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return json({ error: 'bad coords' }, 400);
@@ -60,7 +61,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'coords outside Belgium' }, 400);
   if (!CATS.includes(cat)) return json({ error: 'bad category' }, 400);
   if (kind === 'report' && !REASONS.includes(reason)) return json({ error: 'bad reason' }, 400);
-  if (URLISH.test(name) || URLISH.test(note)) return json({ error: 'links not allowed' }, 400);
+  if (URLISH.test(name) || URLISH.test(note) || URLISH.test(submitter)) return json({ error: 'links not allowed' }, 400);
 
   // Per-IP rate limit (hashed IP; we never persist the raw address).
   const iphash = await ipHash(request, env);
@@ -73,9 +74,9 @@ export async function onRequestPost({ request, env }) {
   }
 
   await env.DB.prepare(
-    `INSERT INTO suggestions (kind, cat, lat, lon, name, note, reason, status, created, iphash)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)`
-  ).bind(kind, cat, +lat.toFixed(6), +lon.toFixed(6), name, note, reason, new Date().toISOString(), iphash).run();
+    `INSERT INTO suggestions (kind, cat, lat, lon, name, note, submitter, reason, status, created, iphash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)`
+  ).bind(kind, cat, +lat.toFixed(6), +lon.toFixed(6), name, note, submitter, reason, new Date().toISOString(), iphash).run();
 
   return json({ ok: true });
 }

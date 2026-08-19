@@ -19,7 +19,7 @@ export async function onRequestGet({ request, env }) {
   if (!env.DB) return json({ error: 'no database bound' }, 503);
   if (!authed(request, env)) return json({ error: 'unauthorized' }, 401);
   const { results } = await env.DB.prepare(
-    `SELECT id, kind, cat, lat, lon, name, note, reason, status, created
+    `SELECT id, kind, cat, lat, lon, name, note, submitter, reason, status, created
        FROM suggestions
       WHERE status = 'new'
       ORDER BY created DESC

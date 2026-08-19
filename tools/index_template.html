@@ -123,7 +123,7 @@
     <div class="lyr" data-cat="vsnacks"><span class="dot" style="background:var(--vsnacks)"></span><span class="nm">🍫 Snacks vending</span><span class="ct" id="c-vsnacks">0</span></div>
     <div class="lyr" data-cat="shop"><span class="dot" style="background:var(--shop)"></span><span class="nm">🏪 Shop</span><span class="ct" id="c-shop">0</span></div>
     <div class="lyr" data-cat="fuel"><span class="dot" style="background:var(--fuel)"></span><span class="nm">⛽ Fuel-station shop</span><span class="ct" id="c-fuel">0</span></div>
-    <div class="lyr" data-cat="community"><span class="dot" style="background:var(--community)"></span><span class="nm">📍 Community</span><span class="ct" id="c-community">0</span></div>
+    <div class="lyr" data-cat="community"><span class="dot" style="background:var(--community)"></span><span class="nm">⏳ To be approved</span><span class="ct" id="c-community">0</span></div>
 
     <div class="divider"></div>
     <label class="toggle"><input type="checkbox" id="onlyopen"/><span>Only show <b>open right now</b></span></label>
@@ -166,6 +166,8 @@
     <input type="text" id="a2-name" maxlength="80" placeholder="e.g. Coke machine at sports hall / Delhaize"/>
     <label id="a2-notelabel">Note (optional) — anything useful</label>
     <textarea id="a2-note" maxlength="280" placeholder="e.g. cold drinks, 24/7, left of the entrance"></textarea>
+    <label>Your name (optional) — lets the maintainer recognise who suggested it</label>
+    <input type="text" id="a2-submitter" maxlength="40" placeholder="e.g. Jan, or leave blank"/>
     <p class="note">By submitting, you agree this spot may be added to <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL). Prefer to add it upstream yourself? <a id="a2-osm" href="#" target="_blank" rel="noopener">Open an OSM note ↗</a></p>
     <div class="actions">
       <button class="btn ghost" data-close>Cancel</button>
@@ -210,7 +212,7 @@
    cat: water | vdrinks | vsnacks | shop | fuel   (community added at runtime) */
 const POIS = __DATA__;
 const COLORS = {water:'#1e88e5', vdrinks:'#f57c00', vsnacks:'#c98a00', shop:'#2e9e3f', fuel:'#8e44ad', community:'#d81b8c'};
-const LABELS = {water:'Free water', vdrinks:'Drinks vending', vsnacks:'Snacks vending', shop:'Shop', fuel:'Fuel-station shop', community:'Community suggestion'};
+const LABELS = {water:'Free water', vdrinks:'Drinks vending', vsnacks:'Snacks vending', shop:'Shop', fuel:'Fuel-station shop', community:'To be approved'};
 const SUBLABEL = {drinking_water:'Drinking water point', water_tap:'Water tap', spring:'Spring (drinkable)', fountain:'Drinkable fountain',
                   drinks:'Drinks machine', snacks:'Snacks machine', convenience:'Convenience store', supermarket:'Supermarket', kiosk:'Kiosk', fuel:'Petrol station (likely has a shop)'};
 const cats = ['water','vdrinks','vsnacks','shop','fuel','community'];
@@ -237,13 +239,14 @@ const esc = s => (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&g
 
 function makeMarker(p){
   const [lat,lon,cat,sub,name,oh] = p;
-  const status = p[6];   // only present for community pins ('new'|'approved')
+  const status = p[6];             // 'new' | 'approved'
+  const isCommunity = p[7] || cat==='community';   // community-added (pending or approved-into-a-category)
   const m = L.circleMarker([lat,lon], {radius:6, color:'#fff', weight:1.5, fillColor:COLORS[cat], fillOpacity:.92});
-  m._hm = {lat,lon,cat,sub,name,oh,status,state:undefined};
+  m._hm = {lat,lon,cat,sub,name,oh,status,isCommunity,state:undefined};
   m.on('click', ()=>{
     const d=m._hm; let badge='';
     if (cat==='community'){
-      badge = d.status==='approved' ? '<span class="badge b-verified">✓ Verified by maintainer</span>' : '<span class="badge b-unk">Community · unverified</span>';
+      badge = '<span class="badge b-unk">⏳ To be approved</span>';
     } else if (cat==='water' && !d.oh){ badge = '<span class="badge b-open">Usually always open</span>'; }
     else { const o=ohObj(d.oh);
       if (o){ const open=o.getState(), nx=o.getNextChange();
@@ -253,7 +256,7 @@ function makeMarker(p){
     const subtxt = SUBLABEL[d.sub] || LABELS[cat];
     const nmeEnc = encodeURIComponent(d.name||subtxt);
     let html = `<div class="pt">${esc(d.name)||subtxt}</div>`
-      + `<div class="kv">${LABELS[cat]}${(SUBLABEL[d.sub]&&SUBLABEL[d.sub]!==d.name)?' · '+SUBLABEL[d.sub]:''}</div>`
+      + `<div class="kv">${LABELS[cat]}${(SUBLABEL[d.sub]&&SUBLABEL[d.sub]!==d.name)?' · '+SUBLABEL[d.sub]:''}${(d.isCommunity&&cat!=='community')?' · community-added':''}</div>`
       + `<div>${badge}</div>`
       + (d.oh?`<div class="kv" style="margin-top:3px">🕑 ${esc(d.oh)}</div>`:'');
     html += `<div class="popact">`
@@ -267,7 +270,8 @@ function makeMarker(p){
 }
 
 POIS.forEach(makeMarker);
-cats.forEach(c=>{ const el=document.getElementById('c-'+c); if(el) el.textContent = markers[c].length.toLocaleString(); });
+function recount(){ cats.forEach(c=>{ const el=document.getElementById('c-'+c); if(el) el.textContent = markers[c].length.toLocaleString(); }); }
+recount();
 cats.forEach(c=>{ if(DEFAULT_OFF[c]){ const el=document.querySelector(`.lyr[data-cat="${c}"]`); if(el) el.classList.add('off'); }});
 
 let onlyOpen=false;
@@ -375,12 +379,18 @@ map.on('click', e=>{
   document.getElementById('a2-loc').textContent = `📍 ${pick.lat.toFixed(5)}, ${pick.lng.toFixed(5)} — looks right? Add any detail below.`;
   document.getElementById('a2-osm').href = `https://www.openstreetmap.org/note/new#map=19/${pick.lat.toFixed(5)}/${pick.lng.toFixed(5)}&layers=N`;
   document.getElementById('a2-name').value=''; document.getElementById('a2-note').value=''; document.getElementById('a2-msg').textContent='';
+  document.getElementById('a2-submitter').value = localStorage.getItem('hm_submitter') || '';   // remember the name across submissions
   openModal('m-add2');
 });
-document.getElementById('a2-submit').addEventListener('click', ()=> submit({
-  kind:'add', cat:addType, lat:+pick.lat.toFixed(6), lon:+pick.lng.toFixed(6),
-  name:document.getElementById('a2-name').value.trim(), note:document.getElementById('a2-note').value.trim()
-}, document.getElementById('a2-msg'), true));
+document.getElementById('a2-submit').addEventListener('click', ()=>{
+  const submitter=document.getElementById('a2-submitter').value.trim();
+  localStorage.setItem('hm_submitter', submitter);
+  submit({
+    kind:'add', cat:addType, lat:+pick.lat.toFixed(6), lon:+pick.lng.toFixed(6),
+    name:document.getElementById('a2-name').value.trim(), note:document.getElementById('a2-note').value.trim(),
+    submitter
+  }, document.getElementById('a2-msg'), true);
+});
 
 /* REPORT flow */
 let reportRef=null;
@@ -409,8 +419,9 @@ async function submit(body, msgEl, isAdd){
     const r=await fetch('/api/suggestions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
     if(!r.ok) throw new Error(await r.text());
     msgEl.innerHTML = isAdd ? '✅ Thanks! Added for the maintainer to verify.' : '✅ Thanks! Report sent for review.';
-    if(isAdd){ const m=makeMarker([body.lat,body.lon,'community',body.cat,body.name||'', '', 'new']); enabled.community=true;
-      document.getElementById('c-community').textContent=markers.community.length.toLocaleString(); refresh(); }
+    if(isAdd){ makeMarker([body.lat,body.lon,'community',body.cat,body.name||'', '', 'new']); enabled.community=true;
+      const el=document.querySelector('.lyr[data-cat="community"]'); if(el) el.classList.remove('off');
+      recount(); refresh(); }
     setTimeout(closeModal, 1200);
   }catch(err){
     const note = `${(body.kind==='report'?'REPORT ('+body.reason+'): ':'ADD: ')}${body.cat} ${body.name||''} ${body.note||''}`.trim();
@@ -419,12 +430,16 @@ async function submit(body, msgEl, isAdd){
   }
 }
 
-/* load existing community suggestions if backend present */
+/* load community submissions: APPROVED ones graduate into their real category
+   (findable via the legend); PENDING ones sit in the "To be approved" layer. */
+const SUBFOR = {vdrinks:'drinks', vsnacks:'snacks', fuel:'fuel'};
 fetch('/api/suggestions').then(r=>r.ok?r.json():null).then(list=>{
   if(!Array.isArray(list)) return;
-  list.forEach(s=> makeMarker([s.lat,s.lon,'community',s.cat,s.name||'', '', s.status||'new']));
-  document.getElementById('c-community').textContent = markers.community.length.toLocaleString();
-  refresh();
+  list.forEach(s=>{
+    if(s.status==='approved') makeMarker([s.lat, s.lon, s.cat, SUBFOR[s.cat]||'', s.name||'', '', 'approved', true]);
+    else                      makeMarker([s.lat, s.lon, 'community', s.cat, s.name||'', '', 'new']);
+  });
+  recount(); refresh();
 }).catch(()=>{});
 </script>
 </body>

@@ -20,6 +20,8 @@
   .cat{font-size:11px;font-weight:600;color:#5b6675}
   .when{margin-left:auto;font-size:11px;color:#98a2b3}
   .name{font-weight:700;margin:5px 0 2px;font-size:15px}
+  .by{display:inline-block;font-size:12.5px;background:#eef6ff;color:#0d47a1;padding:2px 9px;border-radius:20px;margin:2px 0 4px}
+  .by.anon{background:#f1f3f6;color:#8a94a3}
   .detail{font-size:13px;color:#3a4658;line-height:1.5}
   .reason{color:#c0392b;font-weight:600}
   .acts{display:flex;gap:8px;margin-top:10px}
@@ -77,6 +79,7 @@ function render(rows){
          <span class="when">${new Date(r.created).toLocaleString('en-GB')}</span>
        </div>
        <div class="name">${esc(r.name)||'(no name)'}</div>
+       ${r.submitter?`<div class="by">👤 by <b>${esc(r.submitter)}</b></div>`:'<div class="by anon">👤 anonymous</div>'}
        ${r.kind==='report'?`<div class="detail reason">⚑ ${REASONLABEL[r.reason]||r.reason}</div>`:''}
        ${r.note?`<div class="detail">${esc(r.note)}</div>`:''}
        <div class="detail">📍 ${r.lat}, ${r.lon}</div>

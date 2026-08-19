@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS suggestions (
   lon     REAL NOT NULL,
   name    TEXT,
   note    TEXT,
+  submitter TEXT,                       -- optional name the contributor gave (maintainer-only; never shown publicly)
   reason  TEXT,                         -- for reports: no_shop | gone | moved | closed_wrong | other
   status  TEXT NOT NULL DEFAULT 'new',  -- new | approved | rejected
   created TEXT NOT NULL,                -- ISO-8601 timestamp
