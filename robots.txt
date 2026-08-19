@@ -1,0 +1,8 @@
+# https://ikhebdorst.be
+User-agent: *
+Allow: /
+# The moderation page is maintainer-only — keep it out of search results.
+Disallow: /admin.html
+Disallow: /api/
+
+Sitemap: https://ikhebdorst.be/sitemap.xml

@@ -56,6 +56,21 @@ Each POI is stored as a compact array to keep the file small:
 Only ~39% of shops carry `opening_hours`, and only ~12% of vending machines. An
 empty value renders as **"hours unknown"**, not "closed".
 
+## Safety guards on the daily rebuild
+
+The refresh runs unattended, so it refuses to write a bad `index.html`:
+
+- **Partial-result detection** — Overpass answers `200` with a `remark` field when a
+  query times out or runs out of memory, and the payload is then silently
+  incomplete. Any `remark` aborts the build.
+- **Absolute floors** — each category has a minimum plausible count
+  (`MIN_EXPECTED` in `tools/refresh_data.py`).
+- **Shrink guard** — a category dropping below 85% of what's currently live also
+  aborts, so a flaky response can't quietly delete thousands of points.
+
+On failure the script exits non-zero, the workflow fails, and the previous
+`index.html` stays deployed.
+
 ## Refreshing
 
 ```bash

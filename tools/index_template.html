@@ -94,7 +94,6 @@
     .btn{padding:13px 8px;font-size:14px}
     .locbtn{width:42px;height:42px;font-size:20px;border-radius:10px}
     .leaflet-popup-content{font-size:14px;min-width:190px}
-    .leaflet-control-zoom{display:none}   /* pinch-zoom instead; save space */
     .modal{width:calc(100vw - 24px)}
     .typebtn{padding:14px 8px}
     #tip{font-size:13.5px}
@@ -184,6 +183,8 @@
     <select id="r-reason"></select>
     <label>Note (optional)</label>
     <textarea id="r-note" maxlength="200" placeholder="anything that helps us verify"></textarea>
+    <label>Your name (optional) — lets the maintainer recognise who reported it</label>
+    <input type="text" id="r-submitter" maxlength="40" placeholder="e.g. Jan, or leave blank"/>
     <div class="actions">
       <button class="btn ghost" data-close>Cancel</button>
       <button class="btn primary" id="r-submit">Send report</button>
@@ -218,7 +219,9 @@ const SUBLABEL = {drinking_water:'Drinking water point', water_tap:'Water tap', 
 const cats = ['water','vdrinks','vsnacks','shop','fuel','community'];
 const DEFAULT_OFF = {vsnacks:true};   // snacks layer starts hidden
 
-const map = L.map('map', {zoomControl:true}).setView([50.85, 4.35], 8);
+// Zoom sits bottom-left: the top-left default is covered by the control panel.
+const map = L.map('map', {zoomControl:false}).setView([50.85, 4.35], 8);
+L.control.zoom({position:'bottomleft'}).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   {maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
 map.attributionControl.setPrefix('Hydration Map');
@@ -234,8 +237,59 @@ const st=document.createElement('style');
 st.textContent='.hm-cluster div{width:34px;height:34px;border-radius:50%;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);opacity:.92}';
 document.head.appendChild(st);
 
-function ohObj(oh){ if(!oh || !window.opening_hours) return null; try{ return new opening_hours(oh,{address:{country_code:'be'}}); }catch(e){ return null; } }
+/* Belgium has no school-holiday (SH) dataset in opening_hours.js, so any rule
+   using SH makes the library log an error and bail. Drop just those clauses and
+   evaluate the rest — the normal-week answer is what "open now" needs. */
+function stripSH(oh){
+  if(!/(^|[\s,;])SH([\s,]|$)/.test(oh)) return oh;
+  return oh.split(';').filter(part => !/(^|[\s,])SH(?=[\s,]|$)/.test(part.trim())).join(';').trim();
+}
+function ohObj(oh){
+  if(!oh || !window.opening_hours) return null;
+  const cleaned = stripSH(oh);
+  if(!cleaned) return null;
+  try{ return new opening_hours(cleaned,{address:{country_code:'be'}}); }catch(e){ return null; }
+}
 const esc = s => (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* Build the popup HTML. Nothing user-supplied is ever interpolated into an
+   attribute or into inline JS — the report link carries no data, it's wired up
+   with a real listener on popupopen (see below). */
+function popupHTML(d){
+  const cat=d.cat; let badge='';
+  if (cat==='community'){
+    badge = '<span class="badge b-unk">⏳ To be approved</span>';
+  } else if (cat==='water' && !d.oh){ badge = '<span class="badge b-open">Usually always open</span>'; }
+  else { const o=ohObj(d.oh);
+    if (o){ const open=o.getState(), nx=o.getNextChange();
+      badge = open ? '<span class="badge b-open">Open now</span>' : '<span class="badge b-closed">Closed now</span>';
+      if (nx) badge += ` <span class="kv">${open?'until':'opens'} ${esc(nx.toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'}))}</span>`;
+    } else badge = '<span class="badge b-unk">Hours unknown</span>'; }
+  const subtxt = SUBLABEL[d.sub] || LABELS[cat];
+  return `<div class="pt">${esc(d.name)||esc(subtxt)}</div>`
+    + `<div class="kv">${esc(LABELS[cat])}${(SUBLABEL[d.sub]&&SUBLABEL[d.sub]!==d.name)?' · '+esc(SUBLABEL[d.sub]):''}${(d.isCommunity&&cat!=='community')?' · community-added':''}</div>`
+    + `<div>${badge}</div>`
+    + (d.oh?`<div class="kv" style="margin-top:3px">🕑 ${esc(d.oh)}</div>`:'')
+    + `<div class="popact">`
+      + `<a class="js-report" role="button" tabindex="0">⚑ Report a problem</a>`
+      + (cat!=='community'?` · <a href="https://www.openstreetmap.org/#map=19/${encodeURIComponent(d.lat)}/${encodeURIComponent(d.lon)}" target="_blank" rel="noopener">OSM ↗</a>`:'')
+    + `</div>`;
+}
+
+/* Return a real DOM node with the report handler already attached. (Binding via
+   the marker's 'popupopen' event does NOT work for markers inside a cluster
+   group — the event only fires on the map — so wire the element directly.) */
+function buildPopup(d){
+  const el=document.createElement('div');
+  el.innerHTML = popupHTML(d);
+  const a = el.querySelector('.js-report');
+  if(a){
+    const go=ev=>{ ev.preventDefault(); openReport(d); };
+    a.addEventListener('click', go);
+    a.addEventListener('keydown', ev=>{ if(ev.key==='Enter'||ev.key===' ') go(ev); });
+  }
+  return el;
+}
 
 function makeMarker(p){
   const [lat,lon,cat,sub,name,oh] = p;
@@ -243,28 +297,7 @@ function makeMarker(p){
   const isCommunity = p[7] || cat==='community';   // community-added (pending or approved-into-a-category)
   const m = L.circleMarker([lat,lon], {radius:6, color:'#fff', weight:1.5, fillColor:COLORS[cat], fillOpacity:.92});
   m._hm = {lat,lon,cat,sub,name,oh,status,isCommunity,state:undefined};
-  m.on('click', ()=>{
-    const d=m._hm; let badge='';
-    if (cat==='community'){
-      badge = '<span class="badge b-unk">⏳ To be approved</span>';
-    } else if (cat==='water' && !d.oh){ badge = '<span class="badge b-open">Usually always open</span>'; }
-    else { const o=ohObj(d.oh);
-      if (o){ const open=o.getState(), nx=o.getNextChange();
-        badge = open ? '<span class="badge b-open">Open now</span>' : '<span class="badge b-closed">Closed now</span>';
-        if (nx) badge += ` <span class="kv">${open?'until':'opens'} ${nx.toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'})}</span>`;
-      } else badge = '<span class="badge b-unk">Hours unknown</span>'; }
-    const subtxt = SUBLABEL[d.sub] || LABELS[cat];
-    const nmeEnc = encodeURIComponent(d.name||subtxt);
-    let html = `<div class="pt">${esc(d.name)||subtxt}</div>`
-      + `<div class="kv">${LABELS[cat]}${(SUBLABEL[d.sub]&&SUBLABEL[d.sub]!==d.name)?' · '+SUBLABEL[d.sub]:''}${(d.isCommunity&&cat!=='community')?' · community-added':''}</div>`
-      + `<div>${badge}</div>`
-      + (d.oh?`<div class="kv" style="margin-top:3px">🕑 ${esc(d.oh)}</div>`:'');
-    html += `<div class="popact">`
-      + `<a onclick="hmReport(${lat},${lon},'${cat}','${nmeEnc}')">⚑ Report a problem</a>`
-      + (cat!=='community'?` · <a href="https://www.openstreetmap.org/#map=19/${lat}/${lon}" target="_blank" rel="noopener">OSM ↗</a>`:'')
-      + `</div>`;
-    m.bindPopup(html).openPopup();
-  });
+  m.on('click', ()=> m.bindPopup(buildPopup(m._hm)).openPopup());
   markers[cat].push(m);
   return m;
 }
@@ -276,8 +309,10 @@ cats.forEach(c=>{ if(DEFAULT_OFF[c]){ const el=document.querySelector(`.lyr[data
 
 let onlyOpen=false;
 function passes(m){ if(!enabled[m._hm.cat]) return false; if(onlyOpen && m._hm.state===false) return false; return true; }
-function refresh(){
-  cats.forEach(c=>{
+/* Pass a category (or array) to rebuild only that cluster — toggling one layer
+   shouldn't re-add the other ~9,000 markers. Omit to rebuild everything. */
+function refresh(only){
+  (only ? [].concat(only) : cats).forEach(c=>{
     groups[c].clearLayers();
     if(!enabled[c]){ if(map.hasLayer(groups[c])) map.removeLayer(groups[c]); return; }
     groups[c].addLayers(markers[c].filter(passes));
@@ -288,20 +323,33 @@ refresh();
 
 document.querySelectorAll('.lyr').forEach(el=>{
   const c=el.dataset.cat;
-  el.addEventListener('click', ()=>{ enabled[c]=!enabled[c]; el.classList.toggle('off',!enabled[c]); refresh(); });
+  el.setAttribute('role','button');
+  el.setAttribute('tabindex','0');
+  el.setAttribute('aria-pressed', String(!!enabled[c]));
+  const toggle=()=>{ enabled[c]=!enabled[c]; el.classList.toggle('off',!enabled[c]);
+    el.setAttribute('aria-pressed', String(enabled[c])); refresh(c); };
+  el.addEventListener('click', toggle);
+  el.addEventListener('keydown', ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); toggle(); } });
 });
 
 /* opening-hours evaluation, chunked */
 const idle = fn => (window.requestIdleCallback ? requestIdleCallback(fn,{timeout:200}) : setTimeout(fn,1));
-document.getElementById('nowlabel').textContent = new Date().toLocaleString('en-GB',{weekday:'long',hour:'2-digit',minute:'2-digit'});
-const toEval = [].concat(...cats.map(c=>markers[c])).filter(m=>m._hm.oh);
-let ei=0; const ohStatus=document.getElementById('ohstatus');
+const ohStatus=document.getElementById('ohstatus');
+function updateNowLabel(){
+  document.getElementById('nowlabel').textContent =
+    new Date().toLocaleString('en-GB',{weekday:'long',hour:'2-digit',minute:'2-digit'});
+}
+updateNowLabel();
+let toEval=[], ei=0;
 function evalChunk(){
   const end=Math.min(ei+400,toEval.length);
   for(;ei<end;ei++){ const m=toEval[ei], o=ohObj(m._hm.oh); m._hm.state = o?o.getState():undefined; }
   if(ei<toEval.length){ ohStatus.textContent=`Checking opening hours… ${Math.round(100*ei/toEval.length)}%`; idle(evalChunk); }
   else { ohStatus.textContent=`Opening hours checked for ${toEval.length.toLocaleString()} places.`; if(onlyOpen) refresh(); }
 }
+function evalAll(){ toEval=[].concat(...cats.map(c=>markers[c])).filter(m=>m._hm.oh); ei=0; idle(evalChunk); }
+// Re-check every 10 min so a long-open tab doesn't show yesterday's "Open now".
+setInterval(()=>{ updateNowLabel(); if(ohReady) evalAll(); }, 600000);
 // Lazy-load the ~500 KB opening_hours library AFTER first paint, so it's off the
 // critical path. The map + all markers render immediately; open/closed badges and
 // the "open now" filter light up a second or two later once it's ready.
@@ -317,16 +365,22 @@ function loadOpeningHours(then){
   s.onerror=()=>{ ohLoading=false; ohStatus.textContent='(open-now check unavailable)'; };
   document.head.appendChild(s);
 }
-idle(()=> loadOpeningHours(()=> idle(evalChunk)));
+idle(()=> loadOpeningHours(evalAll));
 document.getElementById('onlyopen').addEventListener('change', e=>{
   onlyOpen=e.target.checked;
-  if(onlyOpen && !ohReady){ ohStatus.textContent='Checking opening hours…'; loadOpeningHours(()=> idle(evalChunk)); }
+  if(onlyOpen && !ohReady){ ohStatus.textContent='Checking opening hours…'; loadOpeningHours(evalAll); }
   refresh();
 });
 
 /* panel collapse (mobile-friendly) */
 const panel=document.getElementById('panel'), collapseBtn=document.getElementById('collapse');
-function setCollapsed(c){ panel.classList.toggle('collapsed', c); collapseBtn.textContent = c ? '▸' : '▾'; }
+function setCollapsed(c){
+  panel.classList.toggle('collapsed', c);
+  collapseBtn.textContent = c ? '▸' : '▾';
+  collapseBtn.setAttribute('aria-expanded', String(!c));
+  collapseBtn.setAttribute('aria-label', c ? 'Expand panel' : 'Collapse panel');
+  collapseBtn.title = c ? 'Expand' : 'Collapse';
+}
 collapseBtn.addEventListener('click', ()=> setCollapsed(!panel.classList.contains('collapsed')));
 const mq = window.matchMedia('(max-width:640px)');
 setCollapsed(mq.matches);                              // start collapsed on phones, expanded on desktop
@@ -356,18 +410,37 @@ map.locate({setView:true, maxZoom:14, enableHighAccuracy:false, timeout:7000, ma
 /* ---------- modals ---------- */
 const veil=document.getElementById('veil'), tip=document.getElementById('tip');
 const modals=['m-add','m-add2','m-report','m-help'];
-function openModal(id){ modals.forEach(x=>document.getElementById(x).style.display = x===id?'block':'none'); veil.style.display='flex'; }
-function closeModal(){ veil.style.display='none'; }
+let lastFocus=null;
+function openModal(id){
+  lastFocus=document.activeElement;
+  modals.forEach(x=>document.getElementById(x).style.display = x===id?'block':'none');
+  veil.style.display='flex';
+  const first=document.getElementById(id).querySelector('input:not([type=hidden]):not(#hp), select, textarea, button, .typebtn');
+  if(first && first.focus) setTimeout(()=>first.focus(), 30);
+}
+function closeModal(){ veil.style.display='none'; if(lastFocus&&lastFocus.focus) lastFocus.focus(); lastFocus=null; }
 veil.addEventListener('click', e=>{ if(e.target===veil) closeModal(); });
 document.querySelectorAll('[data-close]').forEach(b=> b.addEventListener('click', closeModal));
-document.getElementById('helplink').addEventListener('click', ()=> openModal('m-help'));
+const helplink=document.getElementById('helplink');
+helplink.setAttribute('role','button'); helplink.setAttribute('tabindex','0');
+helplink.addEventListener('click', ()=> openModal('m-help'));
+helplink.addEventListener('keydown', ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); openModal('m-help'); } });
+// Escape closes a modal, or cancels "pick a spot on the map" mode.
+document.addEventListener('keydown', ev=>{
+  if(ev.key!=='Escape') return;
+  if(veil.style.display==='flex'){ closeModal(); }
+  else if(pickMode==='add'){ pickMode=null; tip.style.display='none'; map.getContainer().style.cursor=''; }
+});
 
 /* ADD flow */
 let addType=null, pick=null;
 document.getElementById('addbtn').addEventListener('click', ()=> openModal('m-add'));
 document.querySelectorAll('#m-add .typebtn').forEach(b=>{
-  b.addEventListener('click', ()=>{ if(document.getElementById('hp').value){ closeModal(); return; }
-    addType=b.dataset.type; closeModal(); startPick(); });
+  b.setAttribute('role','button'); b.setAttribute('tabindex','0');
+  const pickType=()=>{ if(document.getElementById('hp').value){ closeModal(); return; }
+    addType=b.dataset.type; closeModal(); startPick(); };
+  b.addEventListener('click', pickType);
+  b.addEventListener('keydown', ev=>{ if(ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); pickType(); } });
 });
 function startPick(){ tip.textContent='Click on the map at the exact spot…'; tip.style.display='block'; map.getContainer().style.cursor='crosshair'; pickMode='add'; }
 let pickMode=null;
@@ -398,48 +471,91 @@ const REASONS = {
   fuel:[['no_shop',"There's no shop here (pumps only)"],['gone',"Doesn't exist anymore"],['closed_wrong','Opening hours are wrong'],['other','Something else']],
   _default:[['gone',"Doesn't exist anymore"],['moved','Wrong location'],['closed_wrong','Opening hours are wrong'],['other','Something else']]
 };
-window.hmReport = function(lat,lon,cat,nameEnc){
-  reportRef={lat,lon,cat,name:decodeURIComponent(nameEnc)};
-  document.getElementById('r-what').textContent = `About: ${reportRef.name}`;
+function openReport(d){
+  const label = d.name || SUBLABEL[d.sub] || LABELS[d.cat];
+  reportRef={lat:d.lat, lon:d.lon, cat:d.cat, name:label};
+  document.getElementById('r-what').textContent = `About: ${label}`;   // textContent = no injection
   const sel=document.getElementById('r-reason'); sel.innerHTML='';
-  (REASONS[cat]||REASONS._default).forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); });
+  (REASONS[d.cat]||REASONS._default).forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); });
   document.getElementById('r-note').value=''; document.getElementById('r-msg').textContent='';
+  document.getElementById('r-submitter').value = localStorage.getItem('hm_submitter') || '';
   openModal('m-report');
-};
-document.getElementById('r-submit').addEventListener('click', ()=> submit({
-  kind:'report', cat:reportRef.cat, lat:reportRef.lat, lon:reportRef.lon,
-  name:reportRef.name, reason:document.getElementById('r-reason').value, note:document.getElementById('r-note').value.trim()
-}, document.getElementById('r-msg'), false));
+}
+document.getElementById('r-submit').addEventListener('click', ()=>{
+  const submitter=document.getElementById('r-submitter').value.trim();
+  localStorage.setItem('hm_submitter', submitter);
+  submit({
+    kind:'report', cat:reportRef.cat, lat:reportRef.lat, lon:reportRef.lon,
+    name:reportRef.name, reason:document.getElementById('r-reason').value,
+    note:document.getElementById('r-note').value.trim(), submitter
+  }, document.getElementById('r-msg'), false);
+});
 
-/* shared submit → backend, with OSM-note fallback */
+/* shared submit → backend. Distinguishes a *rejected* submission (server replied
+   with an error we should show) from an *unreachable* backend (offer OSM notes). */
+const HUMAN_ERR = {
+  'rate limit — try later':'You\'ve sent a lot of suggestions recently. Please try again in a while.',
+  'links not allowed':'Please remove links/URLs from the text.',
+  'coords outside Belgium':'That spot is outside Belgium.',
+  'bad category':'Something went wrong with the type — please try again.',
+};
 async function submit(body, msgEl, isAdd){
+  const btn = isAdd ? document.getElementById('a2-submit') : document.getElementById('r-submit');
+  if (btn.disabled) return;                                   // guard against double-submit
+  btn.disabled = true; btn.style.opacity = .6;
   msgEl.textContent='Sending…';
   body.hp = (document.getElementById('hp')||{}).value || '';   // honeypot (bots fill it)
+  let res;
   try{
-    const r=await fetch('/api/suggestions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
-    if(!r.ok) throw new Error(await r.text());
-    msgEl.innerHTML = isAdd ? '✅ Thanks! Added for the maintainer to verify.' : '✅ Thanks! Report sent for review.';
-    if(isAdd){ makeMarker([body.lat,body.lon,'community',body.cat,body.name||'', '', 'new']); enabled.community=true;
-      const el=document.querySelector('.lyr[data-cat="community"]'); if(el) el.classList.remove('off');
-      recount(); refresh(); }
-    setTimeout(closeModal, 1200);
-  }catch(err){
-    const note = `${(body.kind==='report'?'REPORT ('+body.reason+'): ':'ADD: ')}${body.cat} ${body.name||''} ${body.note||''}`.trim();
-    msgEl.innerHTML = 'Backend not connected yet. You can log it straight on OpenStreetMap instead: '
-      + `<a href="https://www.openstreetmap.org/note/new#map=19/${body.lat}/${body.lon}&layers=N" target="_blank" rel="noopener">open a map note ↗</a>`;
+    res = await fetch('/api/suggestions',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  }catch(netErr){                                             // offline / backend unreachable
+    btn.disabled=false; btn.style.opacity=1;
+    msgEl.innerHTML = 'Could not reach the server. You can log it straight on OpenStreetMap instead: '
+      + `<a href="https://www.openstreetmap.org/note/new#map=19/${encodeURIComponent(body.lat)}/${encodeURIComponent(body.lon)}&layers=N" target="_blank" rel="noopener">open a map note ↗</a>`;
+    return;
   }
+  if(!res.ok){                                                // server replied, but rejected it
+    let reason=''; try{ reason=(await res.json()).error||''; }catch(e){}
+    btn.disabled=false; btn.style.opacity=1;
+    msgEl.textContent = '⚠️ ' + (HUMAN_ERR[reason] || (res.status===503
+      ? 'The suggestions service is not available right now.'
+      : 'Could not save that' + (reason?` (${reason})`:'') + '.'));
+    return;
+  }
+  msgEl.innerHTML = isAdd ? '✅ Thanks! Added for the maintainer to verify.' : '✅ Thanks! Report sent for review.';
+  if(isAdd){ makeMarker([body.lat,body.lon,'community',body.cat,body.name||'', '', 'new']); enabled.community=true;
+    const el=document.querySelector('.lyr[data-cat="community"]');
+    if(el){ el.classList.remove('off'); el.setAttribute('aria-pressed','true'); }
+    recount(); refresh('community'); }
+  setTimeout(()=>{ closeModal(); btn.disabled=false; btn.style.opacity=1; }, 1200);
 }
 
 /* load community submissions: APPROVED ones graduate into their real category
    (findable via the legend); PENDING ones sit in the "To be approved" layer. */
 const SUBFOR = {vdrinks:'drinks', vsnacks:'snacks', fuel:'fuel'};
+/* Once an approved spot has been pushed upstream, the daily OSM refresh brings it
+   back as base data — so skip an approved pin that already sits on top of one. */
+function alreadyOnMap(lat, lon, cat, metres){
+  const dLat = metres/111000, dLon = metres/(111000*Math.cos(lat*Math.PI/180) || 1);
+  return (markers[cat]||[]).some(m => !m._hm.isCommunity
+    && Math.abs(m._hm.lat-lat) < dLat && Math.abs(m._hm.lon-lon) < dLon);
+}
 fetch('/api/suggestions').then(r=>r.ok?r.json():null).then(list=>{
   if(!Array.isArray(list)) return;
+  let added=0;
   list.forEach(s=>{
-    if(s.status==='approved') makeMarker([s.lat, s.lon, s.cat, SUBFOR[s.cat]||'', s.name||'', '', 'approved', true]);
-    else                      makeMarker([s.lat, s.lon, 'community', s.cat, s.name||'', '', 'new']);
+    const lat=Number(s.lat), lon=Number(s.lon);
+    if(!Number.isFinite(lat) || !Number.isFinite(lon)) return;      // skip malformed rows
+    if(s.status==='approved'){
+      if(!cats.includes(s.cat) || s.cat==='community') return;
+      if(alreadyOnMap(lat, lon, s.cat, 40)) return;                 // deduped against OSM base data
+      makeMarker([lat, lon, s.cat, SUBFOR[s.cat]||'', s.name||'', '', 'approved', true]);
+    } else {
+      makeMarker([lat, lon, 'community', s.cat, s.name||'', '', 'new']);
+    }
+    added++;
   });
-  recount(); refresh();
+  if(added){ recount(); refresh(); }
 }).catch(()=>{});
 </script>
 </body>

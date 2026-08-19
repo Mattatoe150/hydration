@@ -26,6 +26,7 @@ One table, `suggestions` (full DDL in [`schema.sql`](../schema.sql)):
 | `reason` | for reports: `no_shop` / `gone` / `moved` / `closed_wrong` / `other` |
 | `status` | `new` → `approved` / `rejected` (your moderation) |
 | `created` | ISO-8601 timestamp |
+| `submitter` | optional name the contributor typed, so you can recognise regulars/friends — **shown only in `admin.html`, never in the public feed** |
 | `iphash` | salted hash of submitter IP, for rate limiting only — **cleared the moment you moderate the row** |
 
 ## How writes happen

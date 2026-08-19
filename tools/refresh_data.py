@@ -71,8 +71,51 @@ def load(name, query):
         return json.loads(cache.read_text())
     print(f"Fetching {name}…")
     data = overpass(query)
+    # Overpass answers 200 with a "remark" when a query times out or runs out of
+    # memory — the payload is then silently PARTIAL. Never build from that.
+    remark = data.get('remark')
+    if remark:
+        raise SystemExit(f"Overpass returned a partial/failed result for {name}: {remark}")
     cache.write_text(json.dumps(data))
     return data
+
+
+# Minimum plausible counts per category. The daily job runs unattended, so if a
+# flaky Overpass response would shrink the map, fail loudly instead of shipping it.
+MIN_EXPECTED = {'water': 900, 'vdrinks': 300, 'vsnacks': 250, 'shop': 5000, 'fuel': 200}
+MAX_SHRINK = 0.85   # also fail if any category drops below 85% of what's live now
+
+
+def previous_counts():
+    """Category counts currently baked into ../index.html (empty on first build)."""
+    idx = ROOT / "index.html"
+    if not idx.exists():
+        return {}
+    m = re.search(r'const POIS = (\[.*?\]);\n', idx.read_text(), re.S)
+    if not m:
+        return {}
+    try:
+        return collections.Counter(p[2] for p in json.loads(m.group(1)))
+    except Exception:
+        return {}
+
+
+def sanity_check(counts):
+    prev = previous_counts()
+    problems = []
+    for cat, floor in MIN_EXPECTED.items():
+        got = counts.get(cat, 0)
+        if got < floor:
+            problems.append(f"{cat}: {got} < absolute minimum {floor}")
+        was = prev.get(cat, 0)
+        if was and got < was * MAX_SHRINK:
+            problems.append(f"{cat}: {got} is under {int(MAX_SHRINK*100)}% of the previous {was}")
+    if problems:
+        raise SystemExit("Refusing to write index.html — the new data looks wrong:\n  - "
+                         + "\n  - ".join(problems)
+                         + "\n(Overpass may have returned partial data. Re-run later.)")
+    if prev:
+        print("Sanity check passed (previous: " + ", ".join(f"{k}={v}" for k, v in sorted(prev.items())) + ")")
 
 
 def coord(e):
@@ -143,8 +186,10 @@ def build():
             continue
         pois.append([round(c[0], 5), round(c[1], 5), cat, sub, name_of(t), t.get('opening_hours', '')])
 
+    counts = collections.Counter(p[2] for p in pois)
     print(f"\nTOTAL POIs: {len(pois)}")
-    print(dict(collections.Counter(p[2] for p in pois)))
+    print(dict(counts))
+    sanity_check(counts)
 
     data = json.dumps(pois, ensure_ascii=False, separators=(',', ':'))
     tpl = (HERE / "index_template.html").read_text()
