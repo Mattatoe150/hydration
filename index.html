@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
+<link rel="preconnect" href="https://a.tile.openstreetmap.org"/>
+<link rel="preconnect" href="https://b.tile.openstreetmap.org"/>
+<link rel="preconnect" href="https://c.tile.openstreetmap.org"/>
 <title>Hydration Map · Belgium — free water, open shops & drinks</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%A7%3C/text%3E%3C/svg%3E"/>
 <link rel="canonical" href="https://ikhebdorst.be/"/>
@@ -201,7 +205,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/opening_hours@3.8.0/opening_hours+deps.min.js"></script>
 <script>
 /* ---------- data ----------  POI = [lat, lon, cat, sub, name, oh]
    cat: water | vdrinks | vsnacks | shop | fuel   (community added at runtime) */
@@ -229,7 +232,7 @@ const st=document.createElement('style');
 st.textContent='.hm-cluster div{width:34px;height:34px;border-radius:50%;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);opacity:.92}';
 document.head.appendChild(st);
 
-function ohObj(oh){ if(!oh) return null; try{ return new opening_hours(oh,{address:{country_code:'be'}}); }catch(e){ return null; } }
+function ohObj(oh){ if(!oh || !window.opening_hours) return null; try{ return new opening_hours(oh,{address:{country_code:'be'}}); }catch(e){ return null; } }
 const esc = s => (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function makeMarker(p){
@@ -295,8 +298,27 @@ function evalChunk(){
   if(ei<toEval.length){ ohStatus.textContent=`Checking opening hours… ${Math.round(100*ei/toEval.length)}%`; idle(evalChunk); }
   else { ohStatus.textContent=`Opening hours checked for ${toEval.length.toLocaleString()} places.`; if(onlyOpen) refresh(); }
 }
-idle(evalChunk);
-document.getElementById('onlyopen').addEventListener('change', e=>{ onlyOpen=e.target.checked; refresh(); });
+// Lazy-load the ~500 KB opening_hours library AFTER first paint, so it's off the
+// critical path. The map + all markers render immediately; open/closed badges and
+// the "open now" filter light up a second or two later once it's ready.
+let ohLoading=false, ohReady=false; const ohThen=[];
+function loadOpeningHours(then){
+  if(ohReady){ then&&then(); return; }
+  if(then) ohThen.push(then);
+  if(ohLoading) return;
+  ohLoading=true;
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/combine/npm/suncalc@1.9.0/suncalc.js,npm/opening_hours@3.14.0/build/opening_hours.js';
+  s.onload=()=>{ ohReady=true; ohThen.splice(0).forEach(fn=>fn()); };
+  s.onerror=()=>{ ohLoading=false; ohStatus.textContent='(open-now check unavailable)'; };
+  document.head.appendChild(s);
+}
+idle(()=> loadOpeningHours(()=> idle(evalChunk)));
+document.getElementById('onlyopen').addEventListener('change', e=>{
+  onlyOpen=e.target.checked;
+  if(onlyOpen && !ohReady){ ohStatus.textContent='Checking opening hours…'; loadOpeningHours(()=> idle(evalChunk)); }
+  refresh();
+});
 
 /* panel collapse (mobile-friendly) */
 const panel=document.getElementById('panel'), collapseBtn=document.getElementById('collapse');
