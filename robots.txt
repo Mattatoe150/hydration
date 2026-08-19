@@ -1,7 +1,10 @@
 # https://ikhebdorst.be
 User-agent: *
 Allow: /
-# The moderation page is maintainer-only — keep it out of search results.
+# Maintainer-only moderation page. Cloudflare Pages serves it at /admin and
+# 308-redirects /admin.html, so both paths are listed. It also carries a
+# <meta name="robots" content="noindex, nofollow"> as the authoritative signal.
+Disallow: /admin
 Disallow: /admin.html
 Disallow: /api/
 
