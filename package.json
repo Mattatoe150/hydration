@@ -1,0 +1,13 @@
+{
+  "name": "ikhebdorst-hydration-map",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "npm test && python3 -m unittest discover -s tools -p 'test_*.py' && python3 -m py_compile tools/refresh_data.py && wrangler pages functions build --outdir .wrangler/functions-build"
+  },
+  "devDependencies": {
+    "wrangler": "4.125.0"
+  }
+}

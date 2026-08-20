@@ -17,11 +17,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    env:
-      # Optional: set these repo secrets to auto-deploy to Cloudflare Pages.
-      # Leave them unset if your Pages project deploys from Git on push.
-      CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -29,24 +25,28 @@ jobs:
         with:
           python-version: '3.12'
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
       - name: Rebuild index.html from OpenStreetMap
         run: python3 tools/refresh_data.py
 
+      - name: Verify the generated pages and Functions
+        run: npm run check
+
       - name: Commit if the data changed
         run: |
-          if git diff --quiet -- index.html; then
+          git diff --check
+          if git diff --quiet -- index.html nl/index.html sitemap.xml; then
             echo "No data changes today."
           else
             git config user.name  "hydration-bot"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add index.html
+            git add index.html nl/index.html sitemap.xml
             git commit -m "Daily OSM data refresh [skip ci]"
             git push
           fi
-
-      - name: Deploy to Cloudflare Pages (optional)
-        if: ${{ env.CF_API_TOKEN != '' }}
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes wrangler@4 pages deploy --commit-dirty=true

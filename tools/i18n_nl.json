@@ -1,0 +1,495 @@
+{
+  "placeholders": {
+    "__LANG__": "nl",
+    "__CANONICAL__": "https://ikhebdorst.be/nl/",
+    "__OGLOCALE__": "nl_BE",
+    "__OGALT__": "en_GB",
+    "__OTHERURL__": "/",
+    "__OTHERLANG__": "en",
+    "__LANGSWLABEL__": "EN",
+    "__LANGSWTITLE__": "Read this page in English",
+    "__SITENAME__": "Ik heb dorst",
+    "__ALTNAME__": "Hydration Map België",
+    "__LDDESC__": "Kaart van gratis drinkwater, tappunten, drinkfonteinen, drankautomaten en open winkels in België.",
+    "__FEATURES__": [
+      "Gratis drinkwater en tappunten",
+      "Drankautomaten",
+      "Open winkels en tankstations met shop",
+      "Toont wat nu open is",
+      "Werkt op gsm en toont je locatie"
+    ],
+    "__ABOUTH__": "Over deze kaart",
+    "__ABOUT1__": "<b>Ik heb dorst</b> toont waar je in België <b>gratis drinkwater</b> vindt of iets te drinken kunt kopen: openbare <b>drinkwaterfonteinen</b> en <b>tappunten</b> (onder andere van De Watergroep, water-link, Farys en Pidpa), waterpunten in NMBS-stations, kerkhofkraantjes, <b>drankautomaten</b>, nachtwinkels, supermarkten en tankstations met een shop. De kaart laat ook zien <b>wat nú open is</b>, inclusief zondagen en feestdagen — handig tijdens een hittegolf, op de fiets of gewoon onderweg.",
+    "__ABOUT2__": "Gratis, zonder reclame en zonder account. De gegevens komen van OpenStreetMap en worden elke dag ververst. Ontbreekt er een plek? Voeg ze zelf toe met <b>➕ Toevoegen / corrigeren</b>."
+  },
+  "pairs": [
+    [
+      "<title>I'm thirsty — free drinking water, taps &amp; drinks machines in Belgium</title>",
+      "<title>Ik heb dorst — gratis drinkwater, tappunten &amp; drankautomaten in België</title>"
+    ],
+    [
+      "<meta name=\"description\" content=\"Find free drinking water, public taps, fountains, drinks machines and open shops near you across Belgium. Free map, no ads, and it shows what is open right now.\"/>",
+      "<meta name=\"description\" content=\"Vind gratis drinkwater, tappunten, drinkfonteinen, drankautomaten en open winkels in je buurt in België. Gratis kaart zonder reclame, en je ziet meteen wat nú open is.\"/>"
+    ],
+    [
+      "<meta property=\"og:title\" content=\"I'm thirsty — free water &amp; drinks machines in Belgium\"/>",
+      "<meta property=\"og:title\" content=\"Ik heb dorst — gratis drinkwater &amp; drankautomaten in België\"/>"
+    ],
+    [
+      "<meta property=\"og:description\" content=\"Find free drinking water, taps and drinks machines near you — and see what is open right now. Free, no ads.\"/>",
+      "<meta property=\"og:description\" content=\"Vind gratis drinkwater, tappunten en drankautomaten in je buurt — en zie wat nú open is. Gratis, zonder reclame.\"/>"
+    ],
+    [
+      "<meta name=\"twitter:title\" content=\"I'm thirsty — free water &amp; drinks machines in Belgium\"/>",
+      "<meta name=\"twitter:title\" content=\"Ik heb dorst — gratis drinkwater &amp; drankautomaten in België\"/>"
+    ],
+    [
+      "<meta name=\"twitter:description\" content=\"Find free drinking water, taps and drinks machines near you in Belgium.\"/>",
+      "<meta name=\"twitter:description\" content=\"Vind gratis drinkwater, tappunten en drankautomaten in je buurt in België.\"/>"
+    ],
+    [
+      "    <h1>💧 Hydration Map <span style=\"font-size:11px;font-weight:600;color:var(--muted)\">BE</span></h1>",
+      "    <h1>💧 Ik heb dorst <span style=\"font-size:11px;font-weight:600;color:var(--muted)\">BE</span></h1>"
+    ],
+    [
+      "    <button id=\"collapse\" aria-label=\"Collapse panel\" title=\"Collapse\">▾</button>",
+      "    <button id=\"collapse\" aria-label=\"Collapse panel\" title=\"Inklappen\">▾</button>"
+    ],
+    [
+      "    <button class=\"btn primary\" id=\"findme\">📍 Find me</button>",
+      "    <button class=\"btn primary\" id=\"findme\">📍 Vind mij</button>"
+    ],
+    [
+      "    <button class=\"btn ghost\" id=\"addbtn\">➕ Add / fix</button>",
+      "    <button class=\"btn ghost\" id=\"addbtn\">➕ Toevoegen</button>"
+    ],
+    [
+      "    <p class=\"sub\">Free water, open shops &amp; drinks for anyone who's thirsty. Tap a layer to toggle.</p>",
+      "    <p class=\"sub\">Gratis drinkwater, open winkels &amp; drankjes voor iedereen met dorst. Tik op een laag om die aan of uit te zetten.</p>"
+    ],
+    [
+      "    <div class=\"lyr\" data-cat=\"water\"><span class=\"dot\" style=\"background:var(--water)\"></span><span class=\"nm\">💧 Free water</span><span class=\"ct\" id=\"c-water\">0</span></div>",
+      "    <div class=\"lyr\" data-cat=\"water\"><span class=\"dot\" style=\"background:var(--water)\"></span><span class=\"nm\">💧 Gratis drinkwater</span><span class=\"ct\" id=\"c-water\">0</span></div>"
+    ],
+    [
+      "    <div class=\"lyr\" data-cat=\"vdrinks\"><span class=\"dot\" style=\"background:var(--vdrinks)\"></span><span class=\"nm\">🥤 Drinks vending</span><span class=\"ct\" id=\"c-vdrinks\">0</span></div>",
+      "    <div class=\"lyr\" data-cat=\"vdrinks\"><span class=\"dot\" style=\"background:var(--vdrinks)\"></span><span class=\"nm\">🥤 Drankautomaten</span><span class=\"ct\" id=\"c-vdrinks\">0</span></div>"
+    ],
+    [
+      "    <div class=\"lyr\" data-cat=\"vsnacks\"><span class=\"dot\" style=\"background:var(--vsnacks)\"></span><span class=\"nm\">🍫 Snacks vending</span><span class=\"ct\" id=\"c-vsnacks\">0</span></div>",
+      "    <div class=\"lyr\" data-cat=\"vsnacks\"><span class=\"dot\" style=\"background:var(--vsnacks)\"></span><span class=\"nm\">🍫 Snoepautomaten</span><span class=\"ct\" id=\"c-vsnacks\">0</span></div>"
+    ],
+    [
+      "    <div class=\"lyr\" data-cat=\"shop\"><span class=\"dot\" style=\"background:var(--shop)\"></span><span class=\"nm\">🏪 Shop</span><span class=\"ct\" id=\"c-shop\">0</span></div>",
+      "    <div class=\"lyr\" data-cat=\"shop\"><span class=\"dot\" style=\"background:var(--shop)\"></span><span class=\"nm\">🏪 Winkel</span><span class=\"ct\" id=\"c-shop\">0</span></div>"
+    ],
+    [
+      "    <div class=\"lyr\" data-cat=\"fuel\"><span class=\"dot\" style=\"background:var(--fuel)\"></span><span class=\"nm\">⛽ Fuel-station shop</span><span class=\"ct\" id=\"c-fuel\">0</span></div>",
+      "    <div class=\"lyr\" data-cat=\"fuel\"><span class=\"dot\" style=\"background:var(--fuel)\"></span><span class=\"nm\">⛽ Tankstation met shop</span><span class=\"ct\" id=\"c-fuel\">0</span></div>"
+    ],
+    [
+      "    <div class=\"lyr\" data-cat=\"community\"><span class=\"dot\" style=\"background:var(--community)\"></span><span class=\"nm\">⏳ To be approved</span><span class=\"ct\" id=\"c-community\">0</span></div>",
+      "    <div class=\"lyr\" data-cat=\"community\"><span class=\"dot\" style=\"background:var(--community)\"></span><span class=\"nm\">⏳ Nog goed te keuren</span><span class=\"ct\" id=\"c-community\">0</span></div>"
+    ],
+    [
+      "    <label class=\"toggle\"><input type=\"checkbox\" id=\"onlyopen\"/><span>Only show <b>open right now</b></span></label>",
+      "    <label class=\"toggle\"><input type=\"checkbox\" id=\"onlyopen\"/><span>Toon enkel <b>nu open</b></span></label>"
+    ],
+    [
+      "    <label class=\"toggle\"><input type=\"checkbox\" id=\"walkup\"/><span>Only <b>walk-up</b> spots 🚲 <span class=\"kv\">(no going inside)</span></span></label>",
+      "    <label class=\"toggle\"><input type=\"checkbox\" id=\"walkup\"/><span>Enkel plekken <b>zonder binnen te gaan</b> 🚲</span></label>"
+    ],
+    [
+      "    <span class=\"helplink\" id=\"helplink\">❔ How to add or correct spots</span>",
+      "    <span class=\"helplink\" id=\"helplink\">❔ Hoe voeg je plekken toe of corrigeer je ze?</span>"
+    ],
+    [
+      "    <p class=\"note\">Shops &amp; fuel show open/closed for <b id=\"nowlabel\">now</b> (incl. Sunday &amp; Belgian holidays). Fuel-station shops are a best-guess from OSM tags — <b>report</b> any without a shop. Data © OpenStreetMap (ODbL); coverage is incomplete — but you can help improve it with <b>➕ Add / fix</b>.</p>",
+      "    <p class=\"note\">Winkels &amp; tankstations tonen open/gesloten voor <b id=\"nowlabel\">nu</b> (ook zondagen &amp; Belgische feestdagen). Tankstations met shop zijn een inschatting op basis van OSM-tags — <b>meld</b> het als er geen shop is. Data © OpenStreetMap (ODbL); de kaart is onvolledig — help ze aanvullen met <b>➕ Toevoegen</b>.</p>"
+    ],
+    [
+      "      <a class=\"btn coffee\" id=\"coffee\" href=\"https://buymeacoffee.com/matthiasmesotten\" target=\"_blank\" rel=\"noopener\">☕ Buy me a coffee</a>",
+      "      <a class=\"btn coffee\" id=\"coffee\" href=\"https://buymeacoffee.com/matthiasmesotten\" target=\"_blank\" rel=\"noopener\">☕ Trakteer me op een koffie</a>"
+    ],
+    [
+      "      <p class=\"note\">Keeps this free map running — the domain and the time spent approving submissions. Everything collected above those running costs is donated to <a href=\"https://joinforwater.ngo/en/\" target=\"_blank\" rel=\"noopener\">Join For Water</a> 💧, a Belgian charity working on clean water — you can also <a href=\"https://joinforwater.ngo/en/\" target=\"_blank\" rel=\"noopener\">donate to them directly</a> if you prefer.</p>",
+      "      <p class=\"note\">Zo blijft deze gratis kaart draaien — de domeinnaam en de tijd om inzendingen na te kijken. Alles boven die kosten gaat naar <a href=\"https://joinforwater.ngo/en/\" target=\"_blank\" rel=\"noopener\">Join For Water</a> 💧, een Belgische organisatie voor proper water — je kan ook <a href=\"https://joinforwater.ngo/en/\" target=\"_blank\" rel=\"noopener\">rechtstreeks aan hen doneren</a> als je dat liever hebt.</p>"
+    ],
+    [
+      "<div id=\"tip\">Click on the map at the exact spot…</div>",
+      "<div id=\"tip\">Klik op de kaart op de juiste plek…</div>"
+    ],
+    [
+      "    <h2>Add a spot</h2>",
+      "    <h2>Plek toevoegen</h2>"
+    ],
+    [
+      "    <p class=\"h\">What do you want to add? Please only add things that are open to the public.</p>",
+      "    <p class=\"h\">Wat wil je toevoegen? Voeg enkel plekken toe die publiek toegankelijk zijn.</p>"
+    ],
+    [
+      "      <div class=\"typebtn\" data-type=\"vdrinks\"><span class=\"em\">🥤</span>Drinks vending machine</div>",
+      "      <div class=\"typebtn\" data-type=\"vdrinks\"><span class=\"em\">🥤</span>Drankautomaat</div>"
+    ],
+    [
+      "      <div class=\"typebtn\" data-type=\"shop\"><span class=\"em\">🏪</span>Shop (open to public)</div>",
+      "      <div class=\"typebtn\" data-type=\"shop\"><span class=\"em\">🏪</span>Winkel (publiek)</div>"
+    ],
+    [
+      "      <div class=\"typebtn\" data-type=\"fuel\"><span class=\"em\">⛽</span>Petrol station <b>with a shop</b></div>",
+      "      <div class=\"typebtn\" data-type=\"fuel\"><span class=\"em\">⛽</span>Tankstation <b>met shop</b></div>"
+    ],
+    [
+      "      <div class=\"typebtn\" data-type=\"water\"><span class=\"em\">💧</span>Free water point / tap</div>",
+      "      <div class=\"typebtn\" data-type=\"water\"><span class=\"em\">💧</span>Gratis drinkwater / tappunt</div>"
+    ],
+    [
+      "    <p class=\"note\">Not bread machines or farm-only automats — those are left off this map on purpose.</p>",
+      "    <p class=\"note\">Geen broodautomaten of hoeveautomaten — die staan bewust niet op deze kaart.</p>"
+    ],
+    [
+      "    <div class=\"actions\"><button class=\"btn ghost\" data-close>Cancel</button></div>",
+      "    <div class=\"actions\"><button class=\"btn ghost\" data-close>Annuleren</button></div>"
+    ],
+    [
+      "    <h2 id=\"a2-title\">Add a spot</h2>",
+      "    <h2 id=\"a2-title\">Plek toevoegen</h2>"
+    ],
+    [
+      "    <label>Name (optional)</label>",
+      "    <label>Naam (optioneel)</label>"
+    ],
+    [
+      "    <input type=\"text\" id=\"a2-name\" maxlength=\"80\" placeholder=\"e.g. Coke machine at sports hall / Delhaize\"/>",
+      "    <input type=\"text\" id=\"a2-name\" maxlength=\"80\" placeholder=\"bv. drankautomaat sporthal / Delhaize\"/>"
+    ],
+    [
+      "    <label id=\"a2-notelabel\">Note (optional) — anything useful</label>",
+      "    <label id=\"a2-notelabel\">Notitie (optioneel) — alles wat helpt</label>"
+    ],
+    [
+      "    <textarea id=\"a2-note\" maxlength=\"280\" placeholder=\"e.g. cold drinks, 24/7, left of the entrance\"></textarea>",
+      "    <textarea id=\"a2-note\" maxlength=\"280\" placeholder=\"bv. koude dranken, 24/7, links van de ingang\"></textarea>"
+    ],
+    [
+      "    <label>Getting to it</label>",
+      "    <label>Bereikbaarheid</label>"
+    ],
+    [
+      "    <label class=\"toggle\" style=\"padding:2px 0\"><input type=\"checkbox\" id=\"a2-indoor\"/><span>🚪 You have to go <b>inside</b> a building or shop to reach it</span></label>",
+      "    <label class=\"toggle\" style=\"padding:2px 0\"><input type=\"checkbox\" id=\"a2-indoor\"/><span>🚪 Je moet <b>binnen</b> in een gebouw of winkel om er te geraken</span></label>"
+    ],
+    [
+      "    <p class=\"note\" style=\"margin-top:4px\">Leave unticked if you can just walk up to it — that's what the <b>walk-up</b> filter uses.</p>",
+      "    <p class=\"note\" style=\"margin-top:4px\">Laat leeg als je er gewoon naartoe kan stappen — dat gebruikt de filter.</p>"
+    ],
+    [
+      "    <label>Your name (optional) — lets the maintainer recognise who suggested it</label>",
+      "    <label>Jouw naam (optioneel) — zo weet de beheerder van wie het komt</label>"
+    ],
+    [
+      "    <input type=\"text\" id=\"a2-submitter\" maxlength=\"40\" placeholder=\"e.g. Jan, or leave blank\"/>",
+      "    <input type=\"text\" id=\"a2-submitter\" maxlength=\"40\" placeholder=\"bv. Jan, of laat leeg\"/>"
+    ],
+    [
+      "    <p class=\"note\">By submitting, you agree this spot may be added to <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL). Prefer to add it upstream yourself? <a id=\"a2-osm\" href=\"#\" target=\"_blank\" rel=\"noopener\">Open an OSM note ↗</a></p>",
+      "    <p class=\"note\">Door te verzenden ga je ermee akkoord dat deze plek toegevoegd mag worden aan <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> (ODbL). Liever zelf toevoegen? <a id=\"a2-osm\" href=\"#\" target=\"_blank\" rel=\"noopener\">Open een OSM-notitie ↗</a></p>"
+    ],
+    [
+      "      <button class=\"btn ghost\" data-close>Cancel</button>",
+      "      <button class=\"btn ghost\" data-close>Annuleren</button>"
+    ],
+    [
+      "      <button class=\"btn primary\" id=\"a2-submit\">Submit</button>",
+      "      <button class=\"btn primary\" id=\"a2-submit\">Verzenden</button>"
+    ],
+    [
+      "    <h2>Report a problem</h2>",
+      "    <h2>Probleem melden</h2>"
+    ],
+    [
+      "    <label>What's wrong?</label>",
+      "    <label>Wat klopt er niet?</label>"
+    ],
+    [
+      "    <label>Note (optional)</label>",
+      "    <label>Notitie (optioneel)</label>"
+    ],
+    [
+      "    <textarea id=\"r-note\" maxlength=\"200\" placeholder=\"anything that helps us verify\"></textarea>",
+      "    <textarea id=\"r-note\" maxlength=\"200\" placeholder=\"alles wat helpt om het na te kijken\"></textarea>"
+    ],
+    [
+      "    <label>Your name (optional) — lets the maintainer recognise who reported it</label>",
+      "    <label>Jouw naam (optioneel) — zo weet de beheerder van wie de melding komt</label>"
+    ],
+    [
+      "    <input type=\"text\" id=\"r-submitter\" maxlength=\"40\" placeholder=\"e.g. Jan, or leave blank\"/>",
+      "    <input type=\"text\" id=\"r-submitter\" maxlength=\"40\" placeholder=\"bv. Jan, of laat leeg\"/>"
+    ],
+    [
+      "      <button class=\"btn primary\" id=\"r-submit\">Send report</button>",
+      "      <button class=\"btn primary\" id=\"r-submit\">Melding versturen</button>"
+    ],
+    [
+      "    <h2>Leave a comment</h2>",
+      "    <h2>Laat een reactie achter</h2>"
+    ],
+    [
+      "    <label>Rating (optional)</label>",
+      "    <label>Score (optioneel)</label>"
+    ],
+    [
+      "    <label>Comment (optional) — a tip for the next person</label>",
+      "    <label>Reactie (optioneel) — een tip voor de volgende</label>"
+    ],
+    [
+      "    <textarea id=\"c-note\" maxlength=\"280\" placeholder=\"e.g. coins only, tap is round the back, water tastes fine\"></textarea>",
+      "    <textarea id=\"c-note\" maxlength=\"280\" placeholder=\"bv. enkel muntjes, kraantje achteraan, water smaakt prima\"></textarea>"
+    ],
+    [
+      "    <label>Your name (optional)</label>",
+      "    <label>Jouw naam (optioneel)</label>"
+    ],
+    [
+      "    <input type=\"text\" id=\"c-submitter\" maxlength=\"40\" placeholder=\"e.g. Jan, or leave blank\"/>",
+      "    <input type=\"text\" id=\"c-submitter\" maxlength=\"40\" placeholder=\"bv. Jan, of laat leeg\"/>"
+    ],
+    [
+      "    <p class=\"note\">Ratings show right away. Comments appear once the maintainer has had a look — your name is never shown publicly.</p>",
+      "    <p class=\"note\">Scores verschijnen meteen. Reacties komen online zodra de beheerder ze nakeek — je naam wordt nooit publiek getoond.</p>"
+    ],
+    [
+      "      <button class=\"btn primary\" id=\"c-submit\">Send</button>",
+      "      <button class=\"btn primary\" id=\"c-submit\">Versturen</button>"
+    ],
+    [
+      "    <h2>How to add or correct spots</h2>",
+      "    <h2>Plekken toevoegen of corrigeren</h2>"
+    ],
+    [
+      "    <p class=\"h\">This map is community-maintained. The easiest ways to help:</p>",
+      "    <p class=\"h\">Deze kaart wordt door iedereen samen onderhouden. De makkelijkste manieren om te helpen:</p>"
+    ],
+    [
+      "      <li><b>➕ Add / fix</b> → pick a type → click the exact spot on the map → submit. Best for a <b>drinks machine</b>, a <b>shop</b>, a <b>petrol station with a shop</b>, or a <b>water tap</b> you know.</li>",
+      "      <li><b>➕ Toevoegen</b> → kies een type → klik de juiste plek op de kaart → verzenden. Ideaal voor een <b>drankautomaat</b>, een <b>winkel</b>, een <b>tankstation met shop</b> of een <b>tappunt</b> dat jij kent.</li>"
+    ],
+    [
+      "      <li><b>Fix an existing spot:</b> click its pin, then <b>⚑ Report</b> — e.g. “no shop here”, “doesn't exist anymore”, or “wrong info”.</li>",
+      "      <li><b>Een bestaande plek corrigeren:</b> klik op de stip en dan <b>⚑ Melden</b> — bv. “hier is geen shop”, “bestaat niet meer” of “verkeerde info”.</li>"
+    ],
+    [
+      "      <li>Every submission is checked by the maintainer before it's trusted, so nothing you or anyone else adds can break the map.</li>",
+      "      <li>Elke inzending wordt eerst nagekeken door de beheerder, dus niemand kan de kaart stukmaken.</li>"
+    ],
+    [
+      "      <li>To improve the underlying data for <i>every</i> map, add it straight to <a href=\"https://www.openstreetmap.org\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> — the <a href=\"https://streetcomplete.app/\" target=\"_blank\" rel=\"noopener\">StreetComplete</a> app makes this a 2-tap job while you're out.</li>",
+      "      <li>Wil je de gegevens voor <i>alle</i> kaarten verbeteren? Voeg ze rechtstreeks toe aan <a href=\"https://www.openstreetmap.org\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> — the <a href=\"https://streetcomplete.app/\" target=\"_blank\" rel=\"noopener\">StreetComplete</a> app maakt er onderweg een kwestie van twee tikken van.</li>"
+    ],
+    [
+      "    <div class=\"actions\"><button class=\"btn primary\" data-close>Got it</button></div>",
+      "    <div class=\"actions\"><button class=\"btn primary\" data-close>Begrepen</button></div>"
+    ],
+    [
+      "const LABELS = {water:'Free water', vdrinks:'Drinks vending', vsnacks:'Snacks vending', shop:'Shop', fuel:'Fuel-station shop', community:'To be approved'};",
+      "const LABELS = {water:'Gratis drinkwater', vdrinks:'Drankautomaat', vsnacks:'Snoepautomaat', shop:'Winkel', fuel:'Tankstation met shop', community:'Nog goed te keuren'};"
+    ],
+    [
+      "const SUBLABEL = {drinking_water:'Drinking water point', water_tap:'Water tap', spring:'Spring (drinkable)', fountain:'Drinkable fountain',",
+      "const SUBLABEL = {drinking_water:'Drinkwaterpunt', water_tap:'Tappunt', spring:'Bron (drinkbaar)', fountain:'Drinkfontein',"
+    ],
+    [
+      "                  water_point:'Potable water fill point', refill:'Refill your bottle here', toilets:'Public toilets with drinking water', well:'Drinkable well',",
+      "                  water_point:'Vulpunt drinkbaar water', refill:'Hier kan je je fles vullen', toilets:'Openbaar toilet met drinkwater', well:'Drinkbare put',"
+    ],
+    [
+      "                  cemetery:'Cemetery tap',",
+      "                  cemetery:'Kraantje op het kerkhof',"
+    ],
+    [
+      "                  drinks:'Drinks machine', snacks:'Snacks machine', convenience:'Convenience store', supermarket:'Supermarket', kiosk:'Kiosk',",
+      "                  drinks:'Drankautomaat', snacks:'Snoepautomaat', convenience:'Buurtwinkel', supermarket:'Supermarkt', kiosk:'Kiosk',"
+    ],
+    [
+      "                  beverages:'Drinks shop', fuel:'Petrol station (likely has a shop)'};",
+      "                  beverages:'Drankenwinkel', fuel:'Tankstation (waarschijnlijk met shop)'};"
+    ],
+    [
+      "    badge = '<span class=\"badge b-unk\">⏳ To be approved</span>';",
+      "    badge = '<span class=\"badge b-unk\">⏳ Nog goed te keuren</span>';"
+    ],
+    [
+      "  } else if (cat==='water' && !d.oh){ badge = '<span class=\"badge b-open\">Usually always open</span>'; }",
+      "  } else if (cat==='water' && !d.oh){ badge = '<span class=\"badge b-open\">Meestal altijd open</span>'; }"
+    ],
+    [
+      "      badge = open ? '<span class=\"badge b-open\">Open now</span>' : '<span class=\"badge b-closed\">Closed now</span>';",
+      "      badge = open ? '<span class=\"badge b-open\">Nu open</span>' : '<span class=\"badge b-closed\">Nu gesloten</span>';"
+    ],
+    [
+      "      if (nx) badge += ` <span class=\"kv\">${open?'until':'opens'} ${esc(nx.toLocaleString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit'}))}</span>`;",
+      "      if (nx) badge += ` <span class=\"kv\">${open?'tot':'opent'} ${esc(nx.toLocaleString('nl-BE',{weekday:'short',hour:'2-digit',minute:'2-digit'}))}</span>`;"
+    ],
+    [
+      "    } else badge = '<span class=\"badge b-unk\">Hours unknown</span>'; }",
+      "    } else badge = '<span class=\"badge b-unk\">Openingsuren onbekend</span>'; }"
+    ],
+    [
+      "    + `<div class=\"kv\">${esc(LABELS[cat])}${(SUBLABEL[d.sub]&&SUBLABEL[d.sub]!==d.name)?' · '+esc(SUBLABEL[d.sub]):''}${(d.isCommunity&&cat!=='community')?' · community-added':''}</div>`",
+      "    + `<div class=\"kv\">${esc(LABELS[cat])}${(SUBLABEL[d.sub]&&SUBLABEL[d.sub]!==d.name)?' · '+esc(SUBLABEL[d.sub]):''}${(d.isCommunity&&cat!=='community')?' · toegevoegd door een gebruiker':''}</div>`"
+    ],
+    [
+      "    + (d.indoor?`<div class=\"kv\" style=\"margin-top:3px\">🚪 Indoors or customers-only — you'll need to go in</div>`:'')",
+      "    + (d.indoor?`<div class=\"kv\" style=\"margin-top:3px\">🚪 Binnen of enkel voor klanten — je moet naar binnen</div>`:'')"
+    ],
+    [
+      "      + `<a class=\"js-comment\" role=\"button\" tabindex=\"0\">💬 Comment</a>`",
+      "      + `<a class=\"js-comment\" role=\"button\" tabindex=\"0\">💬 Reactie</a>`"
+    ],
+    [
+      "      + ` · <a class=\"js-report\" role=\"button\" tabindex=\"0\">⚑ Report</a>`",
+      "      + ` · <a class=\"js-report\" role=\"button\" tabindex=\"0\">⚑ Melden</a>`"
+    ],
+    [
+      "    new Date().toLocaleString('en-GB',{weekday:'long',hour:'2-digit',minute:'2-digit'});",
+      "    new Date().toLocaleString('nl-BE',{weekday:'long',hour:'2-digit',minute:'2-digit'});"
+    ],
+    [
+      "  if(ei<toEval.length){ ohStatus.textContent=`Checking opening hours… ${Math.round(100*ei/toEval.length)}%`; idle(evalChunk); }",
+      "  if(ei<toEval.length){ ohStatus.textContent=`Openingsuren nakijken… ${Math.round(100*ei/toEval.length)}%`; idle(evalChunk); }"
+    ],
+    [
+      "  else { ohStatus.textContent=`Opening hours checked for ${toEval.length.toLocaleString()} places.`; if(onlyOpen) refresh(); }",
+      "  else { ohStatus.textContent=`Openingsuren nagekeken voor ${toEval.length.toLocaleString()} plekken.`; if(onlyOpen) refresh(); }"
+    ],
+    [
+      "  s.onerror=()=>{ ohLoading=false; ohStatus.textContent='(open-now check unavailable)'; };",
+      "  s.onerror=()=>{ ohLoading=false; ohStatus.textContent='(controle op openingsuren niet beschikbaar)'; };"
+    ],
+    [
+      "  if(onlyOpen && !ohReady){ ohStatus.textContent='Checking opening hours…'; loadOpeningHours(evalAll); }",
+      "  if(onlyOpen && !ohReady){ ohStatus.textContent='Openingsuren nakijken…'; loadOpeningHours(evalAll); }"
+    ],
+    [
+      "  collapseBtn.setAttribute('aria-label', c ? 'Expand panel' : 'Collapse panel');",
+      "  collapseBtn.setAttribute('aria-label', c ? 'Paneel openklappen' : 'Paneel inklappen');"
+    ],
+    [
+      "  collapseBtn.title = c ? 'Expand' : 'Collapse';",
+      "  collapseBtn.title = c ? 'Openklappen' : 'Inklappen';"
+    ],
+    [
+      "const LocBtn = L.Control.extend({options:{position:'topright'}, onAdd:function(){ const d=L.DomUtil.create('div','locbtn'); d.innerHTML='📍'; d.title='Find my location'; L.DomEvent.on(d,'click',L.DomEvent.stop).on(d,'click',()=>locate(true)); return d; }});",
+      "const LocBtn = L.Control.extend({options:{position:'topright'}, onAdd:function(){ const d=L.DomUtil.create('div','locbtn'); d.innerHTML='📍'; d.title='Vind mijn locatie'; L.DomEvent.on(d,'click',L.DomEvent.stop).on(d,'click',()=>locate(true)); return d; }});"
+    ],
+    [
+      "  if(manual) findBtn.textContent='📍 Locating…';",
+      "  if(manual) findBtn.textContent='📍 Zoeken…';"
+    ],
+    [
+      "  meMarker=L.marker(e.latlng).addTo(map).bindPopup('You are here').openPopup();",
+      "  meMarker=L.marker(e.latlng).addTo(map).bindPopup('Je bent hier').openPopup();"
+    ],
+    [
+      "  findBtn.textContent='📍 Find me'; manualLocate=false;",
+      "  findBtn.textContent='📍 Vind mij'; manualLocate=false;"
+    ],
+    [
+      "map.on('locationerror', ()=>{ findBtn.textContent='📍 Find me'; if(manualLocate){ manualLocate=false; alert('Could not get your location. Allow location access for this site and try again.'); } });",
+      "map.on('locationerror', ()=>{ findBtn.textContent='📍 Vind mij'; if(manualLocate){ manualLocate=false; alert('Kon je locatie niet bepalen. Geef deze site toegang tot je locatie en probeer opnieuw.'); } });"
+    ],
+    [
+      "function startPick(){ tip.textContent='Click on the map at the exact spot…'; tip.style.display='block'; map.getContainer().style.cursor='crosshair'; pickMode='add'; }",
+      "function startPick(){ tip.textContent='Klik op de kaart op de juiste plek…'; tip.style.display='block'; map.getContainer().style.cursor='crosshair'; pickMode='add'; }"
+    ],
+    [
+      "  document.getElementById('a2-title').textContent = 'Add: '+({vdrinks:'Drinks vending machine',shop:'Shop',fuel:'Petrol station with a shop',water:'Free water point'}[addType]);",
+      "  document.getElementById('a2-title').textContent = 'Toevoegen: '+({vdrinks:'Drankautomaat',shop:'Winkel',fuel:'Tankstation met shop',water:'Gratis drinkwater'}[addType]);"
+    ],
+    [
+      "  document.getElementById('a2-loc').textContent = `📍 ${pick.lat.toFixed(5)}, ${pick.lng.toFixed(5)} — looks right? Add any detail below.`;",
+      "  document.getElementById('a2-loc').textContent = `📍 ${pick.lat.toFixed(5)}, ${pick.lng.toFixed(5)} — klopt dat? Vul hieronder eventueel details aan.`;"
+    ],
+    [
+      "  fuel:[['no_shop',\"There's no shop here (pumps only)\"],['gone',\"Doesn't exist anymore\"],['closed_wrong','Opening hours are wrong'],['other','Something else']],",
+      "  fuel:[['no_shop','Hier is geen shop (enkel pompen)'],['gone','Bestaat niet meer'],['closed_wrong','Openingsuren kloppen niet'],['other','Iets anders']],"
+    ],
+    [
+      "  _default:[['gone',\"Doesn't exist anymore\"],['moved','Wrong location'],['closed_wrong','Opening hours are wrong'],['other','Something else']]",
+      "  _default:[['gone','Bestaat niet meer'],['moved','Verkeerde locatie'],['closed_wrong','Openingsuren kloppen niet'],['other','Iets anders']]"
+    ],
+    [
+      "  toIndoor : ['is_indoor',  '🚪 You have to go inside to reach it'],",
+      "  toIndoor : ['is_indoor',  '🚪 Je moet binnen om er te geraken'],"
+    ],
+    [
+      "  toOutdoor: ['is_outdoor', '🚲 It\\'s outdoors — you can walk up to it'],",
+      "  toOutdoor: ['is_outdoor', '🚲 Het staat buiten — je kan er gewoon naartoe'],"
+    ],
+    [
+      "  document.getElementById('r-what').textContent = `About: ${label}`;   // textContent = no injection",
+      "  document.getElementById('r-what').textContent = `Over: ${label}`;   // textContent = no injection"
+    ],
+    [
+      "  b.setAttribute('aria-label', i+' star'+(i>1?'s':''));",
+      "  b.setAttribute('aria-label', i+' ster'+(i>1?'ren':''));"
+    ],
+    [
+      "  document.getElementById('c-what').textContent = 'About: ' + (d.name || SUBLABEL[d.sub] || LABELS[d.cat]);",
+      "  document.getElementById('c-what').textContent = 'Over: ' + (d.name || SUBLABEL[d.sub] || LABELS[d.cat]);"
+    ],
+    [
+      "  if(!note && !chosenStars){ document.getElementById('c-msg').textContent='⚠️ Add a rating or a few words first.'; return; }",
+      "  if(!note && !chosenStars){ document.getElementById('c-msg').textContent='⚠️ Geef eerst een score of schrijf iets.'; return; }"
+    ],
+    [
+      "  'rate limit — try later':'You\\'ve sent a lot of suggestions recently. Please try again in a while.',",
+      "  'rate limit — try later':'Je stuurde net veel inzendingen. Probeer het straks opnieuw.',"
+    ],
+    [
+      "  'links not allowed':'Please remove links/URLs from the text.',",
+      "  'links not allowed':'Haal links/URLs uit de tekst.',"
+    ],
+    [
+      "  'coords outside Belgium':'That spot is outside Belgium.',",
+      "  'coords outside Belgium':'Die plek ligt buiten België.',"
+    ],
+    [
+      "  'bad category':'Something went wrong with the type — please try again.',",
+      "  'bad category':'Er ging iets mis met het type — probeer opnieuw.',"
+    ],
+    [
+      "  msgEl.textContent='Sending…';",
+      "  msgEl.textContent='Versturen…';"
+    ],
+    [
+      "    msgEl.innerHTML = 'Could not reach the server. You can log it straight on OpenStreetMap instead: '",
+      "    msgEl.innerHTML = 'Kon de server niet bereiken. Je kan het rechtstreeks op OpenStreetMap melden: '"
+    ],
+    [
+      "      + `<a href=\"https://www.openstreetmap.org/note/new#map=19/${encodeURIComponent(body.lat)}/${encodeURIComponent(body.lon)}&layers=N\" target=\"_blank\" rel=\"noopener\">open a map note ↗</a>`;",
+      "      + `<a href=\"https://www.openstreetmap.org/note/new#map=19/${encodeURIComponent(body.lat)}/${encodeURIComponent(body.lon)}&layers=N\" target=\"_blank\" rel=\"noopener\">open een OSM-notitie ↗</a>`;"
+    ],
+    [
+      "      ? 'The suggestions service is not available right now.'",
+      "      ? 'De inzenddienst is momenteel niet beschikbaar.'"
+    ],
+    [
+      "      : 'Could not save that' + (reason?` (${reason})`:'') + '.'));",
+      "      : 'Kon dat niet bewaren' + (reason?` (${reason})`:'') + '.'));"
+    ],
+    [
+      "  msgEl.innerHTML = isAdd ? '✅ Thanks! Added for the maintainer to verify.'",
+      "  msgEl.innerHTML = isAdd ? '✅ Bedankt! De beheerder kijkt het na.'"
+    ],
+    [
+      "    : kind==='comment' ? '✅ Thanks! Your rating counts right away; the comment appears after review.'",
+      "    : kind==='comment' ? '✅ Bedankt! Je score telt meteen; de reactie verschijnt na nakijken.'"
+    ],
+    [
+      "    : '✅ Thanks! Report sent for review.';",
+      "    : '✅ Bedankt! Je melding is verstuurd.';"
+    ]
+  ]
+}

@@ -35,13 +35,12 @@ OpenStreetMap note instead of saving to a database.
 npx wrangler d1 create hydration
 ```
 
-Copy the printed `database_id` into [`wrangler.toml`](../wrangler.toml), replacing
-`REPLACE_WITH_YOUR_DATABASE_ID`.
+Copy the printed `database_id` into [`wrangler.jsonc`](../wrangler.jsonc).
 
-### 2. Create the table
+### 2. Apply the database migrations
 
 ```bash
-npx wrangler d1 execute hydration --remote --file=schema.sql
+npx wrangler d1 migrations apply hydration --remote
 ```
 
 ### 3. Set your moderation token
@@ -67,11 +66,12 @@ npx wrangler pages secret put IP_SALT --project-name hydration
 npx wrangler pages deploy . --project-name hydration
 ```
 
-Because `wrangler.toml` contains the `[[d1_databases]]` binding, the Pages
+Because `wrangler.jsonc` contains the D1 binding, the Pages
 Functions deploy with `env.DB` bound to your database. Verify:
 
 ```bash
-curl https://hydration.pages.dev/api/suggestions        # → []  (empty list)
+curl https://hydration.pages.dev/api/health
+# → {"ok":true,"database":"reachable"}
 ```
 
 Submitting the on-map form now writes rows with `status = 'new'`.
@@ -88,7 +88,8 @@ https://hydration.pages.dev/admin.html
 
 Enter your `ADMIN_TOKEN`, click **Load pending**, and for each item click
 **Approve** (certifies it — an add becomes a ✓ verified pin), **Reject** (hides
-it), or **Delete**. The token is stored only in your browser.
+it), or **Delete**. The token is held only in the current tab and is cleared when
+the tab closes.
 
 ### Why a bot can't wreck the map
 
@@ -129,11 +130,10 @@ The OpenStreetMap-derived data in `index.html` is rebuilt automatically by
 [`.github/workflows/refresh-data.yml`](../.github/workflows/refresh-data.yml) —
 daily at 04:17 UTC, plus on demand from the repo's **Actions** tab.
 
-- If your Pages project **deploys from Git**, the workflow's commit triggers a
-  redeploy automatically — nothing else to do.
-- If you deploy via **direct upload** (`wrangler pages deploy`), add two repo
-  secrets — `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` — and the workflow
-  will redeploy for you.
+The production project deploys from Git, so the workflow's commit triggers a
+Cloudflare Pages deployment automatically. Pull requests should be checked in a
+preview deployment first; do not run a second direct-upload deployment from the
+refresh workflow.
 
 See [DATABASE.md](DATABASE.md) for the database, the write path, and the full
 security model.

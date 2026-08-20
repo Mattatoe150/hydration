@@ -45,8 +45,10 @@ Admin  ──POST /api/moderate─────▶ functions/api/moderate.js     
 - `POST /api/suggestions` is public and only ever **inserts** a `status='new'` row.
 - `POST /api/moderate` is token-protected and is the only thing that can approve,
   reject or delete.
-- `GET /api/suggestions` returns just `new`+`approved` **adds** for the map;
-  reports are never exposed publicly.
+- `GET /api/suggestions` returns map-safe fields: new and approved **adds**,
+  approved comment text, aggregate ratings, accepted access corrections, and the
+  coordinates of accepted suppressions. Pending names, moderation notes, IP
+  hashes, and submitter names are never exposed.
 
 ## Security measures
 
@@ -83,15 +85,17 @@ npx wrangler d1 export hydration --remote --output backup-$(date +%F).sql
 npx wrangler d1 execute hydration --remote --file backup-2026-08-17.sql
 ```
 
-D1 also keeps automatic Time Travel backups (point-in-time restore) for the last
-30 days — see the Cloudflare docs.
+D1 Time Travel is always on: point-in-time recovery is retained for 7 days on the
+Workers Free plan and 30 days on Workers Paid. Keep exports separately when you
+need longer retention.
 
 ## Refreshing the base map (daily)
 
 [`.github/workflows/refresh-data.yml`](../.github/workflows/refresh-data.yml) runs
-`tools/refresh_data.py` every day at 04:17 UTC, commits `index.html` if the
-OpenStreetMap data changed, and (optionally) redeploys. This keeps water/shops/
-vending/fuel current without touching the submissions database. You can also run
+`tools/refresh_data.py` every day at 04:17 UTC and commits the English page, Dutch
+page, and sitemap together when the OpenStreetMap data changes. The Git-connected
+Pages project then deploys that commit. This keeps water/shops/vending/fuel current
+without touching the submissions database. You can also run
 it on demand from the repo's **Actions** tab, or locally:
 
 ```bash
