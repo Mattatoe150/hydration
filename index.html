@@ -77,6 +77,9 @@
   .modal label{display:block;font-size:11.5px;font-weight:600;color:var(--muted);margin:9px 0 3px}
   .modal select,.modal input,.modal textarea{width:100%;padding:8px 9px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px}
   .modal textarea{resize:vertical;min-height:52px}
+  /* a checkbox row inside a modal: keep it inline, not a full-width block */
+  .modal label.toggle{display:flex;align-items:center;gap:9px;margin:4px 0 0;font-size:12.5px;font-weight:400;color:var(--fg);line-height:1.35}
+  .modal label.toggle input[type=checkbox]{width:auto;flex:0 0 auto;margin:0}
   .modal .actions{display:flex;gap:8px;margin-top:14px}
   .typegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
   .typebtn{border:1px solid var(--line);border-radius:10px;padding:11px 8px;font-size:12.5px;font-weight:600;cursor:pointer;background:#fff;text-align:center;line-height:1.35}
