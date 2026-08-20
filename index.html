@@ -497,12 +497,27 @@ const REASONS = {
   fuel:[['no_shop',"There's no shop here (pumps only)"],['gone',"Doesn't exist anymore"],['closed_wrong','Opening hours are wrong'],['other','Something else']],
   _default:[['gone',"Doesn't exist anymore"],['moved','Wrong location'],['closed_wrong','Opening hours are wrong'],['other','Something else']]
 };
+// Access corrections — offered for water/vending, where the walk-up filter applies.
+// Most OSM spots carry no indoor/access tag at all, so these are the main way the
+// filter gets better.
+const ACCESS_REASONS = {
+  toIndoor : ['is_indoor',  '🚪 You have to go inside to reach it'],
+  toOutdoor: ['is_outdoor', '🚲 It\'s outdoors — you can walk up to it'],
+};
+function reasonsFor(d){
+  const list = (REASONS[d.cat] || REASONS._default).slice();
+  if (WALKUP_CATS[d.cat]) {
+    // only offer the correction that would actually change something
+    list.unshift(d.indoor ? ACCESS_REASONS.toOutdoor : ACCESS_REASONS.toIndoor);
+  }
+  return list;
+}
 function openReport(d){
   const label = d.name || SUBLABEL[d.sub] || LABELS[d.cat];
   reportRef={lat:d.lat, lon:d.lon, cat:d.cat, name:label};
   document.getElementById('r-what').textContent = `About: ${label}`;   // textContent = no injection
   const sel=document.getElementById('r-reason'); sel.innerHTML='';
-  (REASONS[d.cat]||REASONS._default).forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); });
+  reasonsFor(d).forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); });
   document.getElementById('r-note').value=''; document.getElementById('r-msg').textContent='';
   document.getElementById('r-submitter').value = localStorage.getItem('hm_submitter') || '';
   openModal('m-report');
@@ -584,12 +599,31 @@ function applyHidden(hidden){
   return removed;
 }
 
+/* Accepted "actually indoors / actually walk-up" corrections. OSM tags this on
+   only a fraction of spots, so these keep the walk-up filter honest. */
+function applyOverrides(overrides){
+  let changed=0;
+  overrides.forEach(o=>{
+    const lat=Number(o.lat), lon=Number(o.lon), cat=o.cat;
+    if(!Number.isFinite(lat)||!Number.isFinite(lon)||!markers[cat]) return;
+    const dLat=45/111000, dLon=45/(111000*Math.cos(lat*Math.PI/180) || 1);
+    markers[cat].forEach(m=>{
+      const d=m._hm;
+      if(Math.abs(d.lat-lat)<dLat && Math.abs(d.lon-lon)<dLon && d.indoor!==!!o.indoor){
+        d.indoor = !!o.indoor; changed++;
+      }
+    });
+  });
+  return changed;
+}
+
 fetch('/api/suggestions').then(r=>r.ok?r.json():null).then(data=>{
   if(!data) return;
   // Tolerate both the old array shape and the {pins, hidden} shape.
   const list   = Array.isArray(data) ? data : (data.pins || []);
   const hidden = Array.isArray(data) ? []   : (data.hidden || []);
-  let added = applyHidden(hidden);
+  const overrides = Array.isArray(data) ? [] : (data.overrides || []);
+  let added = applyHidden(hidden) + applyOverrides(overrides);
   list.forEach(s=>{
     const lat=Number(s.lat), lon=Number(s.lon);
     if(!Number.isFinite(lat) || !Number.isFinite(lon)) return;      // skip malformed rows

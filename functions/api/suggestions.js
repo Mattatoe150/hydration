@@ -21,7 +21,7 @@
 import { json, ipHash } from '../_util.js';
 
 const CATS = ['water', 'vdrinks', 'vsnacks', 'shop', 'fuel'];
-const REASONS = ['no_shop', 'gone', 'moved', 'closed_wrong', 'other'];
+const REASONS = ['no_shop', 'gone', 'moved', 'closed_wrong', 'is_indoor', 'is_outdoor', 'other'];
 const BE = { latMin: 49.4, latMax: 51.6, lonMin: 2.5, lonMax: 6.5 };
 const URLISH = /(https?:\/\/|www\.|\[url|<a\s)/i;
 const RATE_LIMIT = 20;          // max submissions …
@@ -45,7 +45,21 @@ export async function onRequestGet({ env }) {
       WHERE kind = 'report' AND suppress = 1 AND status = 'approved'
       LIMIT 2000`
   ).all();
-  return json({ pins: pins.results ?? [], hidden: hidden.results ?? [] });
+  // Accepted access corrections: "you have to go inside" / "it's actually walk-up".
+  // OSM tags these on only a fraction of spots, so these fix the walk-up filter
+  // and, like suppressions, survive the daily rebuild.
+  const overrides = await env.DB.prepare(
+    `SELECT lat, lon, cat, reason
+       FROM suggestions
+      WHERE kind = 'report' AND status = 'approved'
+        AND reason IN ('is_indoor', 'is_outdoor')
+      LIMIT 2000`
+  ).all();
+  return json({
+    pins: pins.results ?? [],
+    hidden: hidden.results ?? [],
+    overrides: (overrides.results ?? []).map(o => ({ lat: o.lat, lon: o.lon, cat: o.cat, indoor: o.reason === 'is_indoor' ? 1 : 0 })),
+  });
 }
 
 export async function onRequestPost({ request, env }) {

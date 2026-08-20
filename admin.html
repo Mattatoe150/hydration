@@ -42,7 +42,7 @@
   <button id="loadhidden">Hidden spots</button>
 </header>
 <main>
-  <div class="msg" id="msg">Enter your admin token and click “Load pending”. The token is stored only in this browser.<br><b>Approve</b> certifies an added spot · <b>✎ Add to OSM</b> pushes it upstream (then <b>Delete</b> the pin — it returns from OSM on the next refresh).<br>On a <b>report</b>: <b>Accept &amp; remove spot</b> hides that place from the map for good (it stays hidden through daily rebuilds); <b>Accept, keep spot</b> just files the report. Use <b>Hidden spots</b> to undo.</div>
+  <div class="msg" id="msg">Enter your admin token and click “Load pending”. The token is stored only in this browser.<br><b>Approve</b> certifies an added spot · <b>✎ Add to OSM</b> pushes it upstream (then <b>Delete</b> the pin — it returns from OSM on the next refresh).<br>On a <b>report</b>: <b>Accept &amp; remove spot</b> hides that place for good (survives daily rebuilds); <b>Accept, keep spot</b> just files it; <b>Accept &amp; fix access</b> applies an indoors/walk-up correction. Use <b>Hidden spots</b> to undo a removal.</div>
   <div id="list"></div>
 </main>
 <script>
@@ -69,7 +69,8 @@ async function load(){
 }
 
 const CATLABEL = {water:'💧 water',vdrinks:'🥤 drinks vending',vsnacks:'🍫 snacks vending',shop:'🏪 shop',fuel:'⛽ fuel-station shop'};
-const REASONLABEL = {no_shop:'No shop here (pumps only)',gone:"Doesn't exist anymore",moved:'Wrong location',closed_wrong:'Opening hours wrong',other:'Other'};
+const REASONLABEL = {no_shop:'No shop here (pumps only)',gone:"Doesn't exist anymore",moved:'Wrong location',closed_wrong:'Opening hours wrong',is_indoor:'Actually indoors — you must go in',is_outdoor:'Actually walk-up — reachable outside',other:'Other'};
+const ACCESS_FIX = r => r==='is_indoor' || r==='is_outdoor';
 
 function render(rows){
   if(!rows.length){ msgEl.textContent='';
@@ -101,9 +102,12 @@ function render(rows){
            ? `<button class="unhide">↩︎ Put back on the map</button>
               <button class="del">Delete</button>`
            : r.kind==='report'
-             ? `<button class="approve hide">✓ Accept &amp; remove spot</button>
-                <button class="reject soft">Accept, keep spot</button>
-                <button class="del">Delete</button>`
+             ? (ACCESS_FIX(r.reason)
+                ? `<button class="approve">✓ Accept &amp; fix access</button>
+                   <button class="del">Delete</button>`
+                : `<button class="approve hide">✓ Accept &amp; remove spot</button>
+                   <button class="reject soft">Accept, keep spot</button>
+                   <button class="del">Delete</button>`)
              : `<button class="approve">Approve</button>
                 <button class="reject">Reject</button>
                 <button class="del">Delete</button>`}
@@ -115,8 +119,12 @@ function render(rows){
     if(mode==='hidden'){
       q('.unhide').onclick = ()=> act(r.id,'unhide',el);
     } else if(r.kind==='report'){
-      q('.approve').onclick = ()=> act(r.id,'approve_hide',el);   // hides it from the map
-      q('.reject').onclick  = ()=> act(r.id,'approve',el);        // acknowledged, spot stays
+      if(ACCESS_FIX(r.reason)){
+        q('.approve').onclick = ()=> act(r.id,'approve',el);      // applies the indoor/outdoor fix
+      } else {
+        q('.approve').onclick = ()=> act(r.id,'approve_hide',el); // hides it from the map
+        q('.reject').onclick  = ()=> act(r.id,'approve',el);      // acknowledged, spot stays
+      }
     } else {
       q('.approve').onclick = ()=> act(r.id,'approve',el);
       q('.reject').onclick  = ()=> act(r.id,'reject',el);
