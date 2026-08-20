@@ -5,14 +5,14 @@
 An interactive map of places to **refill water** or **buy a cold drink** in
 Belgium/Flanders — for anyone who's thirsty (walking, cycling, running, or just
 out and about). Built from open [OpenStreetMap](https://www.openstreetmap.org)
-data, it combines four things that no existing map puts together:
+data, it combines things no existing map puts together:
 
 | Layer | What it is | Count (2026-08) |
 |-------|------------|-----------------|
-| 💧 **Free water** | drinking-water points, public taps, drinkable springs & fountains | ~1,319 |
+| 💧 **Free water** | drinking-water points, public taps, bottle-refill points, potable fill points, drinkable springs, fountains & wells | ~1,507 |
 | 🥤 **Drinks vending** | drink vending machines (coffee/soft drinks) | ~445 |
-| 🍫 **Snacks vending** | snack/sweets/ice-cream machines (optional layer, off by default) | ~402 |
-| 🏪 **Shop** | convenience stores, supermarkets & kiosks | ~6,992 |
+| 🍫 **Snacks vending** | snack/sweets/ice-cream machines (optional layer, off by default) | ~405 |
+| 🏪 **Shop** | convenience stores, supermarkets, drinks shops & kiosks | ~7,318 |
 | ⛽ **Fuel-station shop** | fuel stations that *likely* have a shop (heuristic, see below) | ~323 |
 | 📍 **Community** | spots suggested by users, once approved (optional backend) | grows over time |
 
@@ -38,12 +38,12 @@ plausibly sell a drink. It's a best guess — users can **report** any that are 
 - **Find me** — geolocation button
 - **Add / fix** — a guided form to add a spot (drinks machine, shop, petrol-with-shop, or water) or to **report** a problem on an existing one ("no shop here", "doesn't exist anymore", "wrong hours")
 - **Maintainer moderation & upstreaming** — everything submitted stays an unverified "Community" pin (or, for reports, invisible) until you approve it at [`/admin.html`](admin.html); nothing a user or bot submits can alter the base map. From the admin page, one click (**✎ Add to OSM**) opens the OpenStreetMap editor at the spot so you can push a verified pin *upstream* into OSM — where every map benefits and your own map picks it up on the next data refresh. Submitters consent to ODbL, so this stays licence-clean.
-- Marker clustering, so ~9.5k points stay fast and legible
+- Marker clustering, so ~10k points stay fast and legible
 - Single self-contained `index.html` (data embedded) — trivially hostable
 
 ## Tech
 
-- **Front-end:** one static `index.html` — [Leaflet](https://leafletjs.com) + MarkerCluster + opening_hours.js (from CDN), OSM raster tiles. All ~9,500 POIs are embedded in the file.
+- **Front-end:** one static `index.html` — [Leaflet](https://leafletjs.com) + MarkerCluster + opening_hours.js (from CDN), OSM raster tiles. All ~10,000 POIs are embedded in the file.
 - **Suggestions backend (optional):** [Cloudflare Pages Functions](functions/api/) backed by [D1](https://developers.cloudflare.com/d1/) — `api/suggestions` (public add/report) and `api/moderate` (token-protected approve/reject, used by `admin.html`). Hardened with parameterised queries, strict validation, a honeypot, per-IP rate limiting (hashed IPs, never stored raw), and a constant-time token check. Without a backend the map still works fully and the form falls back to opening an OpenStreetMap note. Details in [docs/DATABASE.md](docs/DATABASE.md).
 - **Data refresh:** [`tools/refresh_data.py`](tools/refresh_data.py) re-pulls OSM via the Overpass API and rebuilds `index.html` — standard-library Python, no dependencies. Runs **daily** via [GitHub Actions](.github/workflows/refresh-data.yml) so the base map stays current; the community database is untouched by it.
 
@@ -79,8 +79,8 @@ domain and the time spent approving submissions). **Anything collected above tho
 costs is donated to [Join For Water](https://joinforwater.ngo/en/)** — a Belgian
 charity working on clean water.
 
-To wire up the button: create a free page at [buymeacoffee.com](https://www.buymeacoffee.com/),
-then replace `YOUR_HANDLE` in the `☕ Buy me a coffee` link inside
+The button points at [buymeacoffee.com/matthiasmesotten](https://buymeacoffee.com/matthiasmesotten);
+to change it, edit the `☕ Buy me a coffee` link in
 [`tools/index_template.html`](tools/index_template.html) and rebuild
 (`python3 tools/refresh_data.py`).
 

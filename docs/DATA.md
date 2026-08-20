@@ -2,16 +2,23 @@
 
 All map data comes from **OpenStreetMap** via the
 [Overpass API](https://overpass-api.de/). Snapshot embedded in `index.html`:
-**2026-08-17**, whole of Belgium.
+**2026-08-20**, whole of Belgium (~10,000 points).
 
 ## What's included
 
 | Layer | OSM tags queried |
 |-------|------------------|
-| 💧 water | `amenity=drinking_water`; `man_made=water_tap` (unless `drinking_water=no`); `natural=spring` + `drinking_water=yes`; `amenity=fountain` + `drinking_water=yes` |
+| 💧 water | `amenity=drinking_water`; `man_made=water_tap` (unless `drinking_water=no`); `natural=spring` + `drinking_water=yes`; `amenity=fountain` + `drinking_water=yes`; `amenity=water_point`; `drinking_water:refill=yes`; `amenity=toilets` + `drinking_water=yes`; `man_made=water_well` + `drinking_water=yes` |
 | 🥤 vending | `amenity=vending_machine`, then filtered to food/drink values (see below) |
-| 🏪 shop | `shop=convenience`, `shop=supermarket`, `shop=kiosk` |
+| 🏪 shop | `shop=convenience`, `shop=supermarket`, `shop=kiosk`, `shop=beverages` |
 | ⛽ fuel | `amenity=fuel` |
+
+### Deliberately excluded from water
+
+`drinking_water=yes` also appears on camp sites, camp pitches, caravan sites,
+showers, pubs and cinemas. The water is real, but it sits inside a private or
+paying facility — this map only promises spots you can actually walk up to, so
+those are left out.
 
 ### Vending filter
 

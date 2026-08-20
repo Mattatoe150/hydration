@@ -23,8 +23,15 @@ area["ISO3166-1"="BE"][admin_level=2]->.be;
   node["man_made"="water_tap"]["drinking_water"!="no"](area.be);
   node["natural"="spring"]["drinking_water"="yes"](area.be);
   nwr["amenity"="fountain"]["drinking_water"="yes"](area.be);
+  nwr["amenity"="water_point"](area.be);
+  nwr["drinking_water:refill"="yes"](area.be);
+  nwr["amenity"="toilets"]["drinking_water"="yes"](area.be);
+  nwr["man_made"="water_well"]["drinking_water"="yes"](area.be);
 );
 out center;"""
+# Deliberately NOT included: drinking_water=yes on camp_site / camp_pitch /
+# caravan_site / shower / pub / cinema. The water is real but it sits inside a
+# private or paying facility, and this map only promises publicly reachable spots.
 
 VENDING_Q = """[out:json][timeout:180];
 area["ISO3166-1"="BE"][admin_level=2]->.be;
@@ -37,6 +44,7 @@ area["ISO3166-1"="BE"][admin_level=2]->.be;
   nwr["shop"="convenience"](area.be);
   nwr["shop"="supermarket"](area.be);
   nwr["shop"="kiosk"](area.be);
+  nwr["shop"="beverages"](area.be);
   nwr["amenity"="fuel"](area.be);
 );
 out center;"""
@@ -162,7 +170,15 @@ def build():
         sub = ('drinking_water' if t.get('amenity') == 'drinking_water'
                else 'water_tap' if t.get('man_made') == 'water_tap'
                else 'spring' if t.get('natural') == 'spring'
-               else 'fountain' if t.get('amenity') == 'fountain' else 'drinking_water')
+               else 'fountain' if t.get('amenity') == 'fountain'
+               else 'water_point' if t.get('amenity') == 'water_point'
+               else 'toilets' if t.get('amenity') == 'toilets'
+               else 'well' if t.get('man_made') == 'water_well'
+               else 'refill' if t.get('drinking_water:refill') == 'yes'
+               else 'drinking_water')
+        # A refill point is the notable thing about a venue, whatever it also is.
+        if t.get('drinking_water:refill') == 'yes' and sub in ('drinking_water', 'toilets'):
+            sub = 'refill'
         pois.append([round(c[0], 5), round(c[1], 5), 'water', sub, name_of(t), t.get('opening_hours', '')])
 
     for e in load('vending', VENDING_Q)['elements']:
@@ -180,11 +196,22 @@ def build():
             if not fuel_has_shop(t):
                 continue
             cat, sub = 'fuel', 'fuel'
-        elif t.get('shop') in ('convenience', 'supermarket', 'kiosk'):
+        elif t.get('shop') in ('convenience', 'supermarket', 'kiosk', 'beverages'):
             cat, sub = 'shop', t['shop']
         else:
             continue
         pois.append([round(c[0], 5), round(c[1], 5), cat, sub, name_of(t), t.get('opening_hours', '')])
+
+    # A feature can match more than one query (e.g. a refill point that is also a
+    # tagged drinking-water node) — keep one pin per place+category.
+    seen, unique = set(), []
+    for p in pois:
+        key = (p[0], p[1], p[2])
+        if key in seen: continue
+        seen.add(key); unique.append(p)
+    if len(unique) != len(pois):
+        print(f"Deduplicated {len(pois)-len(unique)} overlapping points.")
+    pois = unique
 
     counts = collections.Counter(p[2] for p in pois)
     print(f"\nTOTAL POIs: {len(pois)}")
