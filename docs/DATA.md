@@ -13,6 +13,18 @@ All map data comes from **OpenStreetMap** via the
 | 🏪 shop | `shop=convenience`, `shop=supermarket`, `shop=kiosk`, `shop=beverages` |
 | ⛽ fuel | `amenity=fuel` |
 
+### Cemetery taps
+
+Most Belgian cemeteries have an outdoor tap for grave flowers, and they're a
+well-known refill spot. **306 of them are on the map** — they were always picked
+up by the `man_made=water_tap` / `amenity=drinking_water` queries; a separate
+cemetery-polygon query now identifies them so they're labelled *"Cemetery tap"*
+rather than a generic tap.
+
+Taps a mapper has tagged `drinking_water=no` (15 in cemeteries) stay excluded —
+that's someone's on-the-ground observation that the water is not potable, usually
+matching a *"geen drinkwater"* sign, and the map shouldn't override it.
+
 ### Deliberately excluded from water
 
 `drinking_water=yes` also appears on camp sites, camp pitches, caravan sites,

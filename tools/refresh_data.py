@@ -33,6 +33,23 @@ out center;"""
 # caravan_site / shower / pub / cinema. The water is real but it sits inside a
 # private or paying facility, and this map only promises publicly reachable spots.
 
+# Water features that sit inside a cemetery. These are already picked up by the
+# queries above (most Flemish cemeteries have an outdoor tap for grave flowers,
+# and they're a well-known refill spot) — this query only tells us WHICH ones they
+# are, so they can be labelled as such. Taps a mapper marked drinking_water=no are
+# still excluded by the main query and stay excluded.
+CEMETERY_Q = """[out:json][timeout:180];
+area["ISO3166-1"="BE"][admin_level=2]->.be;
+(way["landuse"="cemetery"](area.be); relation["landuse"="cemetery"](area.be);
+ way["amenity"="grave_yard"](area.be); relation["amenity"="grave_yard"](area.be);)->.cem;
+.cem map_to_area->.ca;
+(
+  node["man_made"="water_tap"](area.ca);
+  node["amenity"="drinking_water"](area.ca);
+  node["amenity"="water_point"](area.ca);
+);
+out ids center;"""
+
 VENDING_Q = """[out:json][timeout:180];
 area["ISO3166-1"="BE"][admin_level=2]->.be;
 node["amenity"="vending_machine"](area.be);
@@ -163,6 +180,13 @@ def fuel_has_shop(t):
 def build():
     pois = []
 
+    # Coordinates of water features that lie inside a cemetery, for labelling.
+    cemetery = set()
+    for e in load('cemetery', CEMETERY_Q)['elements']:
+        c = coord(e)
+        if c: cemetery.add((round(c[0], 5), round(c[1], 5)))
+    print(f"  ({len(cemetery)} of them are cemetery taps)")
+
     for e in load('water', WATER_Q)['elements']:
         c = coord(e)
         if not c: continue
@@ -179,6 +203,9 @@ def build():
         # A refill point is the notable thing about a venue, whatever it also is.
         if t.get('drinking_water:refill') == 'yes' and sub in ('drinking_water', 'toilets'):
             sub = 'refill'
+        # Being in a cemetery is the useful thing to know — say so.
+        if sub in ('drinking_water', 'water_tap', 'water_point') and (round(c[0], 5), round(c[1], 5)) in cemetery:
+            sub = 'cemetery'
         pois.append([round(c[0], 5), round(c[1], 5), 'water', sub, name_of(t), t.get('opening_hours', '')])
 
     for e in load('vending', VENDING_Q)['elements']:

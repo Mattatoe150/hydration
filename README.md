@@ -9,7 +9,7 @@ data, it combines things no existing map puts together:
 
 | Layer | What it is | Count (2026-08) |
 |-------|------------|-----------------|
-| 💧 **Free water** | drinking-water points, public taps, bottle-refill points, potable fill points, drinkable springs, fountains & wells | ~1,507 |
+| 💧 **Free water** | drinking-water points, public taps, cemetery taps, bottle-refill points, potable fill points, drinkable springs, fountains & wells | ~1,508 |
 | 🥤 **Drinks vending** | drink vending machines (coffee/soft drinks) | ~445 |
 | 🍫 **Snacks vending** | snack/sweets/ice-cream machines (optional layer, off by default) | ~405 |
 | 🏪 **Shop** | convenience stores, supermarkets, drinks shops & kiosks | ~7,318 |
