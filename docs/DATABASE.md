@@ -19,13 +19,14 @@ One table, `suggestions` (full DDL in [`schema.sql`](../schema.sql)):
 | column | meaning |
 |--------|---------|
 | `id` | autoincrement primary key |
-| `kind` | `add` (new spot) or `report` (problem with an existing spot) |
+| `kind` | `add` (new spot), `report` (problem) or `comment` (tip / star rating) |
 | `cat` | `water` / `vdrinks` / `vsnacks` / `shop` / `fuel` |
 | `lat`, `lon` | coordinates |
 | `name`, `note` | free text (length-capped) |
 | `reason` | for reports: `no_shop` / `gone` / `moved` / `closed_wrong` / `is_indoor` / `is_outdoor` / `other` |
 | `suppress` | 1 = an accepted report that removes that spot from the map (survives daily rebuilds) |
 | `indoor` | 1 = you must go inside to reach it; drives the walk-up filter |
+| `rating` | 1–5 stars on a comment, 0 = not rated. Ratings publish immediately (a number has no abuse surface); comment **text** waits for approval |
 | `status` | `new` → `approved` / `rejected` (your moderation) |
 | `created` | ISO-8601 timestamp |
 | `submitter` | optional name the contributor typed, so you can recognise regulars/friends — **shown only in `admin.html`, never in the public feed** |
