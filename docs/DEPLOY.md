@@ -130,10 +130,10 @@ The OpenStreetMap-derived data in `index.html` is rebuilt automatically by
 [`.github/workflows/refresh-data.yml`](../.github/workflows/refresh-data.yml) —
 daily at 04:17 UTC, plus on demand from the repo's **Actions** tab.
 
-The production project deploys from Git, so the workflow's commit triggers a
-Cloudflare Pages deployment automatically. Pull requests should be checked in a
-preview deployment first; do not run a second direct-upload deployment from the
-refresh workflow.
+The production project is uploaded explicitly at the end of the refresh workflow
+using the verified tree and exact Git commit. Keep the repository secrets
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` configured. Pull requests
+should still be checked in a preview deployment first.
 
 See [DATABASE.md](DATABASE.md) for the database, the write path, and the full
 security model.
