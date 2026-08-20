@@ -29,6 +29,8 @@
   .acts a{font-size:12px;color:#1e88e5;align-self:center;margin-left:auto}
   .acts button{padding:7px 13px;border:0;border-radius:8px;font-weight:600;font-size:12.5px;cursor:pointer}
   .approve{background:#2e9e3f;color:#fff}.reject{background:#eef2f7;color:#1c2330}.del{background:#fbe9e9;color:#c0392b}
+  .approve.hide{background:#c0392b}.reject.soft{background:#eef2f7}.unhide{background:#1e88e5;color:#fff}
+  header #loadhidden{background:#fff;color:#0d47a1}
   .empty{text-align:center;color:#98a2b3;padding:40px 0}
 </style>
 </head>
@@ -37,9 +39,10 @@
   <h1>✅ Hydration Map — moderation</h1>
   <input id="token" type="password" placeholder="admin token" autocomplete="off"/>
   <button id="load">Load pending</button>
+  <button id="loadhidden">Hidden spots</button>
 </header>
 <main>
-  <div class="msg" id="msg">Enter your admin token and click “Load pending”. The token is stored only in this browser.<br><b>Approve</b> certifies a spot · <b>✎ Add to OSM</b> pushes it upstream into OpenStreetMap (then <b>Delete</b> the pending pin — it'll come back from OSM on the next data refresh).</div>
+  <div class="msg" id="msg">Enter your admin token and click “Load pending”. The token is stored only in this browser.<br><b>Approve</b> certifies an added spot · <b>✎ Add to OSM</b> pushes it upstream (then <b>Delete</b> the pin — it returns from OSM on the next refresh).<br>On a <b>report</b>: <b>Accept &amp; remove spot</b> hides that place from the map for good (it stays hidden through daily rebuilds); <b>Accept, keep spot</b> just files the report. Use <b>Hidden spots</b> to undo.</div>
   <div id="list"></div>
 </main>
 <script>
@@ -47,7 +50,9 @@ const $ = s => document.querySelector(s);
 const tokenEl = $('#token'), listEl = $('#list'), msgEl = $('#msg');
 tokenEl.value = localStorage.getItem('hm_admin_token') || '';
 
-$('#load').addEventListener('click', load);
+let mode='pending';
+$('#load').addEventListener('click', ()=>{mode='pending';load();});
+$('#loadhidden').addEventListener('click', ()=>{mode='hidden';load();});
 async function load(){
   const token = tokenEl.value.trim();
   if(!token){ msgEl.textContent='Please enter your admin token.'; return; }
@@ -55,7 +60,7 @@ async function load(){
   msgEl.textContent = 'Loading…';
   let rows;
   try{
-    const r = await fetch('/api/moderate', {headers:{'x-admin-token':token}});
+    const r = await fetch('/api/moderate'+(mode==='hidden'?'?view=hidden':''), {headers:{'x-admin-token':token}});
     if(r.status===401){ msgEl.textContent='❌ Wrong token.'; return; }
     if(!r.ok) throw new Error(await r.text());
     rows = await r.json();
@@ -67,8 +72,14 @@ const CATLABEL = {water:'💧 water',vdrinks:'🥤 drinks vending',vsnacks:'🍫
 const REASONLABEL = {no_shop:'No shop here (pumps only)',gone:"Doesn't exist anymore",moved:'Wrong location',closed_wrong:'Opening hours wrong',other:'Other'};
 
 function render(rows){
-  if(!rows.length){ msgEl.textContent=''; listEl.innerHTML='<div class="empty">🎉 Nothing pending.</div>'; return; }
-  msgEl.textContent = `${rows.length} pending.`;
+  if(!rows.length){ msgEl.textContent='';
+    listEl.innerHTML = mode==='hidden'
+      ? '<div class="empty">No spots are hidden from the map.</div>'
+      : '<div class="empty">🎉 Nothing pending.</div>';
+    return; }
+  msgEl.textContent = mode==='hidden'
+    ? `${rows.length} spot(s) currently hidden from the map.`
+    : `${rows.length} pending.`;
   listEl.innerHTML = '';
   rows.forEach(r=>{
     const el = document.createElement('div'); el.className='card';
@@ -85,16 +96,31 @@ function render(rows){
        ${r.note?`<div class="detail">${esc(r.note)}</div>`:''}
        <div class="detail">📍 ${r.lat}, ${r.lon}</div>
        <div class="acts">
-         <button class="approve">${r.kind==='report'?'Accept':'Approve'}</button>
-         <button class="reject">Reject</button>
-         <button class="del">Delete</button>
+         ${mode==='hidden'
+           ? `<button class="unhide">↩︎ Put back on the map</button>
+              <button class="del">Delete</button>`
+           : r.kind==='report'
+             ? `<button class="approve hide">✓ Accept &amp; remove spot</button>
+                <button class="reject soft">Accept, keep spot</button>
+                <button class="del">Delete</button>`
+             : `<button class="approve">Approve</button>
+                <button class="reject">Reject</button>
+                <button class="del">Delete</button>`}
          ${r.kind==='add'
            ? `<a href="https://www.openstreetmap.org/edit#map=19/${r.lat}/${r.lon}" target="_blank" rel="noopener">✎ Add to OSM ↗</a>`
-           : `<a href="https://www.openstreetmap.org/#map=19/${r.lat}/${r.lon}" target="_blank" rel="noopener">view on OSM ↗</a>`}
+           : `<a href="https://www.openstreetmap.org/edit#map=19/${r.lat}/${r.lon}" target="_blank" rel="noopener">✎ Fix in OSM ↗</a>`}
        </div>`;
-    el.querySelector('.approve').onclick = ()=> act(r.id,'approve',el);
-    el.querySelector('.reject').onclick  = ()=> act(r.id,'reject',el);
-    el.querySelector('.del').onclick     = ()=> act(r.id,'delete',el);
+    const q = c => el.querySelector(c);
+    if(mode==='hidden'){
+      q('.unhide').onclick = ()=> act(r.id,'unhide',el);
+    } else if(r.kind==='report'){
+      q('.approve').onclick = ()=> act(r.id,'approve_hide',el);   // hides it from the map
+      q('.reject').onclick  = ()=> act(r.id,'approve',el);        // acknowledged, spot stays
+    } else {
+      q('.approve').onclick = ()=> act(r.id,'approve',el);
+      q('.reject').onclick  = ()=> act(r.id,'reject',el);
+    }
+    q('.del').onclick = ()=> act(r.id,'delete',el);
     listEl.appendChild(el);
   });
 }
@@ -107,8 +133,10 @@ async function act(id, action, el){
     if(!r.ok) throw new Error(await r.text());
     el.remove();
     const left = listEl.querySelectorAll('.card').length;
-    msgEl.textContent = left ? `${left} pending.` : '';
-    if(!left) listEl.innerHTML='<div class="empty">🎉 Nothing pending.</div>';
+    msgEl.textContent = left ? (mode==='hidden' ? `${left} hidden.` : `${left} pending.`) : '';
+    if(!left) listEl.innerHTML = mode==='hidden'
+      ? '<div class="empty">No spots are hidden from the map.</div>'
+      : '<div class="empty">🎉 Nothing pending.</div>';
   }catch(e){ el.style.opacity=1; alert('Failed: '+e.message); }
 }
 </script>

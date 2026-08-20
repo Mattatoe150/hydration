@@ -18,6 +18,20 @@ function authed(request, env) {
 export async function onRequestGet({ request, env }) {
   if (!env.DB) return json({ error: 'no database bound' }, 503);
   if (!authed(request, env)) return json({ error: 'unauthorized' }, 401);
+
+  // ?view=hidden lists the spots currently suppressed from the map, so they can
+  // be put back if a suppression turns out to be wrong.
+  if (new URL(request.url).searchParams.get('view') === 'hidden') {
+    const { results } = await env.DB.prepare(
+      `SELECT id, kind, cat, lat, lon, name, note, submitter, reason, status, created
+         FROM suggestions
+        WHERE suppress = 1
+        ORDER BY created DESC
+        LIMIT 500`
+    ).all();
+    return json(results ?? []);
+  }
+
   const { results } = await env.DB.prepare(
     `SELECT id, kind, cat, lat, lon, name, note, submitter, reason, status, created
        FROM suggestions
@@ -40,8 +54,21 @@ export async function onRequestPost({ request, env }) {
 
   if (action === 'approve') {
     await env.DB.prepare("UPDATE suggestions SET status='approved', iphash=NULL WHERE id=?").bind(id).run();
+  } else if (action === 'approve_hide') {
+    // Accept the report AND remove that spot from the map (survives daily rebuilds).
+    const row = await env.DB.prepare("SELECT lat, lon, cat FROM suggestions WHERE id=?").bind(id).first();
+    await env.DB.prepare("UPDATE suggestions SET status='approved', suppress=1, iphash=NULL WHERE id=?").bind(id).run();
+    if (row) {
+      // Resolve any duplicate reports about the same spot in one go.
+      await env.DB.prepare(
+        `UPDATE suggestions SET status='approved', suppress=1, iphash=NULL
+          WHERE kind='report' AND status='new' AND cat=? AND abs(lat-?)<0.0005 AND abs(lon-?)<0.0005`
+      ).bind(row.cat, row.lat, row.lon).run();
+    }
+  } else if (action === 'unhide') {
+    await env.DB.prepare("UPDATE suggestions SET suppress=0 WHERE id=?").bind(id).run();
   } else if (action === 'reject') {
-    await env.DB.prepare("UPDATE suggestions SET status='rejected', iphash=NULL WHERE id=?").bind(id).run();
+    await env.DB.prepare("UPDATE suggestions SET status='rejected', suppress=0, iphash=NULL WHERE id=?").bind(id).run();
   } else if (action === 'delete') {
     await env.DB.prepare("DELETE FROM suggestions WHERE id=?").bind(id).run();
   } else {

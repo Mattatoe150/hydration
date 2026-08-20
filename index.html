@@ -542,9 +542,30 @@ function alreadyOnMap(lat, lon, cat, metres){
   return (markers[cat]||[]).some(m => !m._hm.isCommunity
     && Math.abs(m._hm.lat-lat) < dLat && Math.abs(m._hm.lon-lon) < dLon);
 }
-fetch('/api/suggestions').then(r=>r.ok?r.json():null).then(list=>{
-  if(!Array.isArray(list)) return;
-  let added=0;
+/* Drop base-map pins the maintainer has confirmed are wrong (gone, no shop…).
+   The base map is rebuilt from OSM daily, so the suppression is applied here at
+   display time rather than baked into the data. */
+function applyHidden(hidden){
+  let removed=0;
+  hidden.forEach(h=>{
+    const lat=Number(h.lat), lon=Number(h.lon), cat=h.cat;
+    if(!Number.isFinite(lat)||!Number.isFinite(lon)||!markers[cat]) return;
+    const dLat=45/111000, dLon=45/(111000*Math.cos(lat*Math.PI/180) || 1);
+    for(let i=markers[cat].length-1;i>=0;i--){
+      const d=markers[cat][i]._hm;
+      if(d.isCommunity) continue;                     // only suppress OSM base pins
+      if(Math.abs(d.lat-lat)<dLat && Math.abs(d.lon-lon)<dLon){ markers[cat].splice(i,1); removed++; }
+    }
+  });
+  return removed;
+}
+
+fetch('/api/suggestions').then(r=>r.ok?r.json():null).then(data=>{
+  if(!data) return;
+  // Tolerate both the old array shape and the {pins, hidden} shape.
+  const list   = Array.isArray(data) ? data : (data.pins || []);
+  const hidden = Array.isArray(data) ? []   : (data.hidden || []);
+  let added = applyHidden(hidden);
   list.forEach(s=>{
     const lat=Number(s.lat), lon=Number(s.lon);
     if(!Number.isFinite(lat) || !Number.isFinite(lon)) return;      // skip malformed rows

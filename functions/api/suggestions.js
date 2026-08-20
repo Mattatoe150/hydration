@@ -28,15 +28,24 @@ const RATE_LIMIT = 20;          // max submissions …
 const RATE_WINDOW_MS = 3600e3;  // … per IP per hour
 
 export async function onRequestGet({ env }) {
-  if (!env.DB) return json([]);
-  const { results } = await env.DB.prepare(
+  if (!env.DB) return json({ pins: [], hidden: [] });
+  const pins = await env.DB.prepare(
     `SELECT id, lat, lon, cat, name, note, status
        FROM suggestions
       WHERE kind = 'add' AND status IN ('new', 'approved')
       ORDER BY created DESC
       LIMIT 2000`
   ).all();
-  return json(results ?? []);
+  // Spots the maintainer confirmed are wrong (gone, no shop, …). The base map is
+  // rebuilt from OSM daily, so these must be suppressed at display time — the
+  // suppression lives here and keeps applying after every refresh.
+  const hidden = await env.DB.prepare(
+    `SELECT lat, lon, cat
+       FROM suggestions
+      WHERE kind = 'report' AND suppress = 1 AND status = 'approved'
+      LIMIT 2000`
+  ).all();
+  return json({ pins: pins.results ?? [], hidden: hidden.results ?? [] });
 }
 
 export async function onRequestPost({ request, env }) {
