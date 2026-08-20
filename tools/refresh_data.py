@@ -153,6 +153,25 @@ def name_of(t):
     return (t.get('name') or t.get('brand') or t.get('operator') or '')[:60]
 
 
+# --- "do I have to walk into somewhere?" ---------------------------------
+# Cycling kit + someone's restaurant is an awkward combination, so flag the spots
+# that sit indoors or behind a customers-only door. Belgium has millions of
+# building polygons, so testing containment against them blows Overpass's memory
+# limit; these tags are what can actually be relied on.
+RESTRICTED_ACCESS = {'customers', 'private', 'permit', 'no'}
+
+def needs_entry(t):
+    if t.get('indoor') in ('yes', 'room'):
+        return True
+    if t.get('access') in RESTRICTED_ACCESS:
+        return True
+    if t.get('drinking_water:refill') == 'yes':
+        host = t.get('shop') or t.get('amenity') or t.get('tourism')
+        if host and host not in ('drinking_water', 'water_point', 'fountain'):
+            return True          # the refill tap lives inside that venue
+    return False
+
+
 def vcat(v):
     parts = set(p.strip() for p in (v or '').replace('/', ';').split(';'))
     if parts & DRINK: return 'vdrinks'
@@ -206,14 +225,14 @@ def build():
         # Being in a cemetery is the useful thing to know — say so.
         if sub in ('drinking_water', 'water_tap', 'water_point') and (round(c[0], 5), round(c[1], 5)) in cemetery:
             sub = 'cemetery'
-        pois.append([round(c[0], 5), round(c[1], 5), 'water', sub, name_of(t), t.get('opening_hours', '')])
+        pois.append([round(c[0], 5), round(c[1], 5), 'water', sub, name_of(t), t.get('opening_hours', ''), int(needs_entry(t))])
 
     for e in load('vending', VENDING_Q)['elements']:
         if 'lat' not in e: continue
         t = e.get('tags', {}); cat = vcat(t.get('vending', ''))
         if cat is None: continue
         sub = 'drinks' if cat == 'vdrinks' else 'snacks'
-        pois.append([round(e['lat'], 5), round(e['lon'], 5), cat, sub, name_of(t), t.get('opening_hours', '')])
+        pois.append([round(e['lat'], 5), round(e['lon'], 5), cat, sub, name_of(t), t.get('opening_hours', ''), int(needs_entry(t))])
 
     for e in load('shops', SHOPS_Q)['elements']:
         c = coord(e)
@@ -227,7 +246,7 @@ def build():
             cat, sub = 'shop', t['shop']
         else:
             continue
-        pois.append([round(c[0], 5), round(c[1], 5), cat, sub, name_of(t), t.get('opening_hours', '')])
+        pois.append([round(c[0], 5), round(c[1], 5), cat, sub, name_of(t), t.get('opening_hours', ''), int(needs_entry(t))])
 
     # A feature can match more than one query (e.g. a refill point that is also a
     # tagged drinking-water node) — keep one pin per place+category.

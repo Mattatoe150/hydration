@@ -126,6 +126,7 @@
 
     <div class="divider"></div>
     <label class="toggle"><input type="checkbox" id="onlyopen"/><span>Only show <b>open right now</b></span></label>
+    <label class="toggle"><input type="checkbox" id="walkup"/><span>Only <b>walk-up</b> spots 🚲 <span class="kv">(no going inside)</span></span></label>
     <div id="ohstatus"></div>
 
     <span class="helplink" id="helplink">❔ How to add or correct spots</span>
@@ -272,6 +273,7 @@ function popupHTML(d){
     + `<div class="kv">${esc(LABELS[cat])}${(SUBLABEL[d.sub]&&SUBLABEL[d.sub]!==d.name)?' · '+esc(SUBLABEL[d.sub]):''}${(d.isCommunity&&cat!=='community')?' · community-added':''}</div>`
     + `<div>${badge}</div>`
     + (d.oh?`<div class="kv" style="margin-top:3px">🕑 ${esc(d.oh)}</div>`:'')
+    + (d.indoor?`<div class="kv" style="margin-top:3px">🚪 Indoors or customers-only — you'll need to go in</div>`:'')
     + `<div class="popact">`
       + `<a class="js-report" role="button" tabindex="0">⚑ Report a problem</a>`
       + (cat!=='community'?` · <a href="https://www.openstreetmap.org/#map=19/${encodeURIComponent(d.lat)}/${encodeURIComponent(d.lon)}" target="_blank" rel="noopener">OSM ↗</a>`:'')
@@ -295,10 +297,11 @@ function buildPopup(d){
 
 function makeMarker(p){
   const [lat,lon,cat,sub,name,oh] = p;
-  const status = p[6];             // 'new' | 'approved'
-  const isCommunity = p[7] || cat==='community';   // community-added (pending or approved-into-a-category)
+  const indoor = !!p[6];           // sits indoors / customers-only — you'd have to walk in
+  const status = p[7];             // 'new' | 'approved'
+  const isCommunity = p[8] || cat==='community';   // community-added (pending or approved-into-a-category)
   const m = L.circleMarker([lat,lon], {radius:6, color:'#fff', weight:1.5, fillColor:COLORS[cat], fillOpacity:.92});
-  m._hm = {lat,lon,cat,sub,name,oh,status,isCommunity,state:undefined};
+  m._hm = {lat,lon,cat,sub,name,oh,indoor,status,isCommunity,state:undefined};
   m.on('click', ()=> m.bindPopup(buildPopup(m._hm)).openPopup());
   markers[cat].push(m);
   return m;
@@ -309,8 +312,17 @@ function recount(){ cats.forEach(c=>{ const el=document.getElementById('c-'+c); 
 recount();
 cats.forEach(c=>{ if(DEFAULT_OFF[c]){ const el=document.querySelector(`.lyr[data-cat="${c}"]`); if(el) el.classList.add('off'); }});
 
-let onlyOpen=false;
-function passes(m){ if(!enabled[m._hm.cat]) return false; if(onlyOpen && m._hm.state===false) return false; return true; }
+let onlyOpen=false, walkUpOnly=false;
+// Categories where "walk up to it" is meaningful. Shops and fuel stations are
+// always somewhere you go inside, so the filter leaves them alone.
+const WALKUP_CATS = {water:1, vdrinks:1, vsnacks:1};
+function passes(m){
+  const d=m._hm;
+  if(!enabled[d.cat]) return false;
+  if(onlyOpen && d.state===false) return false;
+  if(walkUpOnly && d.indoor && WALKUP_CATS[d.cat]) return false;
+  return true;
+}
 /* Pass a category (or array) to rebuild only that cluster — toggling one layer
    shouldn't re-add the other ~9,000 markers. Omit to rebuild everything. */
 function refresh(only){
@@ -368,6 +380,10 @@ function loadOpeningHours(then){
   document.head.appendChild(s);
 }
 idle(()=> loadOpeningHours(evalAll));
+document.getElementById('walkup').addEventListener('change', e=>{
+  walkUpOnly=e.target.checked;
+  refresh(Object.keys(WALKUP_CATS));
+});
 document.getElementById('onlyopen').addEventListener('change', e=>{
   onlyOpen=e.target.checked;
   if(onlyOpen && !ohReady){ ohStatus.textContent='Checking opening hours…'; loadOpeningHours(evalAll); }
@@ -525,7 +541,7 @@ async function submit(body, msgEl, isAdd){
     return;
   }
   msgEl.innerHTML = isAdd ? '✅ Thanks! Added for the maintainer to verify.' : '✅ Thanks! Report sent for review.';
-  if(isAdd){ makeMarker([body.lat,body.lon,'community',body.cat,body.name||'', '', 'new']); enabled.community=true;
+  if(isAdd){ makeMarker([body.lat,body.lon,'community',body.cat,body.name||'', '', 0, 'new']); enabled.community=true;
     const el=document.querySelector('.lyr[data-cat="community"]');
     if(el){ el.classList.remove('off'); el.setAttribute('aria-pressed','true'); }
     recount(); refresh('community'); }
@@ -572,9 +588,9 @@ fetch('/api/suggestions').then(r=>r.ok?r.json():null).then(data=>{
     if(s.status==='approved'){
       if(!cats.includes(s.cat) || s.cat==='community') return;
       if(alreadyOnMap(lat, lon, s.cat, 40)) return;                 // deduped against OSM base data
-      makeMarker([lat, lon, s.cat, SUBFOR[s.cat]||'', s.name||'', '', 'approved', true]);
+      makeMarker([lat, lon, s.cat, SUBFOR[s.cat]||'', s.name||'', '', 0, 'approved', true]);
     } else {
-      makeMarker([lat, lon, 'community', s.cat, s.name||'', '', 'new']);
+      makeMarker([lat, lon, 'community', s.cat, s.name||'', '', 0, 'new']);
     }
     added++;
   });

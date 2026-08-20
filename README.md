@@ -34,6 +34,7 @@ plausibly sell a drink. It's a best guess — users can **report** any that are 
 ## Features
 
 - Colour-coded, labelled layers you can toggle on/off
+- **Walk-up filter** — hide water points and vending machines that sit indoors or behind a customers-only door, for when you'd rather not walk into a restaurant in cycling kit
 - **Open-now** evaluation of `opening_hours` (via [opening_hours.js](https://github.com/opening-hours/opening_hours.js)), with an "only show open right now" filter
 - **Find me** — geolocation button
 - **Add / fix** — a guided form to add a spot (drinks machine, shop, petrol-with-shop, or water) or to **report** a problem on an existing one ("no shop here", "doesn't exist anymore", "wrong hours")

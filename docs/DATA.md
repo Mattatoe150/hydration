@@ -65,12 +65,17 @@ a shop. See `fuel_has_shop()` in `tools/refresh_data.py`.
 Each POI is stored as a compact array to keep the file small:
 
 ```
-[ lat, lon, cat, sub, name, opening_hours ]
+[ lat, lon, cat, sub, name, opening_hours, indoor ]
 ```
 
 - `cat` — `water` | `vdrinks` | `vsnacks` | `shop` | `fuel`
 - `sub` — subtype (e.g. `drinking_water`, `supermarket`, `drinks`)
 - `opening_hours` — raw OSM `opening_hours` string, or `""` if untagged
+- `indoor` — `1` when the spot is indoors or customers-only, so you'd have to walk
+  into a venue to reach it (`indoor=yes|room`, `access=customers|private|permit|no`,
+  or a refill tap hosted inside a shop). Powers the **walk-up only** filter.
+  Building-polygon containment was tried and rejected: Belgium has too many
+  buildings and the Overpass query runs out of memory.
 
 Only ~39% of shops carry `opening_hours`, and only ~12% of vending machines. An
 empty value renders as **"hours unknown"**, not "closed".
