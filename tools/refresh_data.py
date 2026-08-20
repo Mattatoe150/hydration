@@ -9,11 +9,14 @@ Refresh the map data from OpenStreetMap (via the Overpass API) and rebuild
 Standard library only. Data © OpenStreetMap contributors, ODbL. Coverage is
 crowd-sourced and partial.
 """
-import json, time, re, urllib.parse, urllib.request, collections, pathlib, sys
+import json, time, re, urllib.error, urllib.parse, urllib.request, collections, pathlib, sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
-ENDPOINT = "https://overpass-api.de/api/interpreter"
+ENDPOINTS = (
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+)
 CACHED = "--cached" in sys.argv
 
 WATER_Q = """[out:json][timeout:180];
@@ -74,18 +77,38 @@ SNACK = {'sweets', 'ice_cream', 'food', 'pizza', 'snacks', 'chocolate', 'chips',
 # strawberries, cheese, meat, honey, flowers, parking_tickets, …) is dropped.
 
 
-def overpass(query, tries=5):
-    for i in range(1, tries + 1):
-        try:
-            req = urllib.request.Request(
-                ENDPOINT, data=urllib.parse.urlencode({"data": query}).encode(),
-                headers={"User-Agent": "hydration-map/1.0 (OSM data refresh)"})
-            with urllib.request.urlopen(req, timeout=200) as r:
-                return json.loads(r.read().decode())
-        except Exception as e:
-            print(f"  attempt {i} failed ({e}); retrying in 20s…", file=sys.stderr)
-            time.sleep(20)
-    raise SystemExit("Overpass API unavailable after several retries.")
+def overpass(query, rounds=3):
+    """Try independent public Overpass instances without trusting partial data."""
+    body = urllib.parse.urlencode({"data": query}).encode()
+    for attempt in range(1, rounds + 1):
+        for endpoint in ENDPOINTS:
+            try:
+                req = urllib.request.Request(
+                    endpoint, data=body,
+                    headers={"User-Agent": "ikhebdorst.be hydration map data refresh"})
+                with urllib.request.urlopen(req, timeout=200) as response:
+                    return json.loads(response.read().decode())
+            except Exception as exc:
+                host = urllib.parse.urlparse(endpoint).netloc
+                print(f"  {host} attempt {attempt} failed ({exc})", file=sys.stderr)
+        if attempt < rounds:
+            print("  all Overpass endpoints failed; retrying in 30s…", file=sys.stderr)
+            time.sleep(30)
+    raise SystemExit("All Overpass API endpoints remained unavailable; existing pages were left untouched.")
+
+
+def atomic_write(path, text):
+    """Replace a generated file only after its complete contents are on disk."""
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(text, encoding="utf-8")
+    temporary.replace(path)
+
+
+def inline_json(value):
+    """JSON safe inside an HTML script element, including hostile OSM labels."""
+    return (json.dumps(value, ensure_ascii=False, separators=(',', ':'))
+            .replace('&', r'\u0026').replace('<', r'\u003c').replace('>', r'\u003e')
+            .replace('\u2028', r'\u2028').replace('\u2029', r'\u2029'))
 
 
 def load(name, query):
@@ -101,7 +124,7 @@ def load(name, query):
     remark = data.get('remark')
     if remark:
         raise SystemExit(f"Overpass returned a partial/failed result for {name}: {remark}")
-    cache.write_text(json.dumps(data))
+    atomic_write(cache, json.dumps(data))
     return data
 
 
@@ -196,6 +219,44 @@ def fuel_has_shop(t):
     return True
 
 
+EN = {
+    "__LANG__": "en", "__CANONICAL__": "https://ikhebdorst.be/",
+    "__OGLOCALE__": "en_GB", "__OGALT__": "nl_BE",
+    "__OTHERURL__": "/nl/", "__OTHERLANG__": "nl",
+    "__LANGSWLABEL__": "NL", "__LANGSWTITLE__": "Lees deze pagina in het Nederlands",
+    "__SITENAME__": "I'm thirsty", "__ALTNAME__": "Hydration Map Belgium",
+    "__LDDESC__": "Map of free drinking water, public taps, fountains, drinks machines and open shops across Belgium.",
+    "__FEATURES__": ["Free drinking water and public taps", "Drinks vending machines",
+                      "Open shops and fuel stations with a shop", "Shows what is open right now",
+                      "Works on mobile and finds your location"],
+    "__ABOUTH__": "About this map",
+    "__ABOUT1__": "<b>I'm thirsty</b> shows where to find <b>free drinking water</b> in Belgium, "
+                  "or somewhere to buy a drink: public <b>drinking fountains</b> and <b>taps</b> "
+                  "(including ones run by De Watergroep, water-link, Farys and Pidpa), water points in "
+                  "NMBS/SNCB stations, cemetery taps, <b>vending machines</b>, night shops, supermarkets "
+                  "and fuel stations with a shop. It also shows <b>what is open right now</b>, including "
+                  "Sundays and Belgian public holidays — handy in a heatwave, on the bike, or just out and about.",
+    "__ABOUT2__": "Free, no ads, no account. The data comes from OpenStreetMap and is refreshed every day. "
+                  "Missing a spot? Add it yourself with <b>➕ Add / fix</b>.",
+}
+
+
+def render(template, data, placeholders, pairs=()):
+    """Render one language and fail if its translation has drifted."""
+    out = template
+    # Longest source first because shorter phrases may be substrings of longer ones.
+    for find, repl in sorted(pairs, key=lambda pair: -len(pair[0])):
+        if find not in out:
+            raise SystemExit(f"Translation out of date — this text is no longer in the template:\n  {find[:90]}")
+        out = out.replace(find, repl)
+    for key, value in placeholders.items():
+        out = out.replace(key, json.dumps(value, ensure_ascii=False) if isinstance(value, list) else value)
+    left = re.findall(r'__[A-Z0-9]+__', out.replace('__DATA__', ''))
+    if left:
+        raise SystemExit(f"Unfilled placeholders: {sorted(set(left))}")
+    return out.replace("__DATA__", data)
+
+
 def build():
     pois = []
 
@@ -264,63 +325,29 @@ def build():
     print(dict(counts))
     sanity_check(counts)
 
-    data = json.dumps(pois, ensure_ascii=False, separators=(',', ':'))
+    data = inline_json(pois)
     tpl = (HERE / "index_template.html").read_text()
-
-    # English is the source language; Dutch is produced from it. Translations are
-    # applied to the TEMPLATE, never to the rendered page, so the POI data (which
-    # contains place names like "Shop" or "Open") can't be corrupted by a
-    # find/replace.
-    EN = {
-        "__LANG__": "en", "__CANONICAL__": "https://ikhebdorst.be/",
-        "__OGLOCALE__": "en_GB", "__OGALT__": "nl_BE",
-        "__OTHERURL__": "/nl/", "__OTHERLANG__": "nl",
-        "__LANGSWLABEL__": "NL", "__LANGSWTITLE__": "Lees deze pagina in het Nederlands",
-        "__SITENAME__": "I'm thirsty", "__ALTNAME__": "Hydration Map Belgium",
-        "__LDDESC__": "Map of free drinking water, public taps, fountains, drinks machines and open shops across Belgium.",
-        "__FEATURES__": ["Free drinking water and public taps", "Drinks vending machines",
-                          "Open shops and fuel stations with a shop", "Shows what is open right now",
-                          "Works on mobile and finds your location"],
-        "__ABOUTH__": "About this map",
-        "__ABOUT1__": "<b>I'm thirsty</b> shows where to find <b>free drinking water</b> in Belgium, "
-                      "or somewhere to buy a drink: public <b>drinking fountains</b> and <b>taps</b> "
-                      "(including ones run by De Watergroep, water-link, Farys and Pidpa), water points in "
-                      "NMBS/SNCB stations, cemetery taps, <b>vending machines</b>, night shops, supermarkets "
-                      "and fuel stations with a shop. It also shows <b>what is open right now</b>, including "
-                      "Sundays and Belgian public holidays — handy in a heatwave, on the bike, or just out and about.",
-        "__ABOUT2__": "Free, no ads, no account. The data comes from OpenStreetMap and is refreshed every day. "
-                      "Missing a spot? Add it yourself with <b>➕ Add / fix</b>.",
-    }
-
-    def render(placeholders, pairs=()):
-        out = tpl
-        # Longest source string first: a short phrase is often a substring of a
-        # longer one (">⏳ To be approved<" sits inside the badge markup), and
-        # replacing the short one first would strand the long one.
-        for find, repl in sorted(pairs, key=lambda pr: -len(pr[0])):
-            if find not in out:
-                raise SystemExit(f"Translation out of date — this text is no longer in the template:\n  {find[:90]}")
-            out = out.replace(find, repl)
-        for key, val in placeholders.items():
-            out = out.replace(key, json.dumps(val, ensure_ascii=False) if isinstance(val, list) else val)
-        left = re.findall(r'__[A-Z0-9]+__', out.replace('__DATA__', ''))
-        if left:
-            raise SystemExit(f"Unfilled placeholders: {sorted(set(left))}")
-        return out.replace("__DATA__", data)
-
-    (ROOT / "index.html").write_text(render(EN))
-    print(f"Wrote {ROOT / 'index.html'} ({round(len(data)/1024)} KB of data).")
 
     nl = json.loads((HERE / "i18n_nl.json").read_text())
     nl_dir = ROOT / "nl"; nl_dir.mkdir(exist_ok=True)
-    (nl_dir / "index.html").write_text(render(nl["placeholders"], nl["pairs"]))
-    print(f"Wrote {nl_dir / 'index.html'} (Dutch, {len(nl['pairs'])} strings translated).")
+    # Render and validate every language before replacing any public file.
+    rendered_en = render(tpl, data, EN)
+    rendered_nl = render(tpl, data, nl["placeholders"], nl["pairs"])
 
     # keep the sitemap's lastmod honest — the data really did change today
     sm = ROOT / "sitemap.xml"
+    rendered_sitemap = None
     if sm.exists():
         today = time.strftime("%Y-%m-%d", time.gmtime())
-        sm.write_text(re.sub(r"<lastmod>[^<]*</lastmod>", f"<lastmod>{today}</lastmod>", sm.read_text()))
+        rendered_sitemap = re.sub(r"<lastmod>[^<]*</lastmod>", f"<lastmod>{today}</lastmod>", sm.read_text())
+
+    atomic_write(ROOT / "index.html", rendered_en)
+    atomic_write(nl_dir / "index.html", rendered_nl)
+    if rendered_sitemap is not None:
+        atomic_write(sm, rendered_sitemap)
+    print(f"Wrote {ROOT / 'index.html'} ({round(len(data)/1024)} KB of data).")
+    print(f"Wrote {nl_dir / 'index.html'} (Dutch, {len(nl['pairs'])} strings translated).")
+    if rendered_sitemap is not None:
         print(f"Updated sitemap lastmod to {today}.")
 
 

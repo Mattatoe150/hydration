@@ -8,16 +8,16 @@
  * Send the token in the `x-admin-token` header (admin.html does this for you).
  * Set it with:  npx wrangler pages secret put ADMIN_TOKEN
  */
-import { json, timingEqual } from '../_util.js';
+import { json, timingEqual, readJson } from '../_util.js';
 
-function authed(request, env) {
+async function authed(request, env) {
   const t = request.headers.get('x-admin-token') || '';
-  return !!env.ADMIN_TOKEN && timingEqual(t, env.ADMIN_TOKEN);
+  return !!env.ADMIN_TOKEN && await timingEqual(t, env.ADMIN_TOKEN);
 }
 
 export async function onRequestGet({ request, env }) {
   if (!env.DB) return json({ error: 'no database bound' }, 503);
-  if (!authed(request, env)) return json({ error: 'unauthorized' }, 401);
+  if (!await authed(request, env)) return json({ error: 'unauthorized' }, 401);
 
   // ?view=hidden lists the spots currently suppressed from the map, so they can
   // be put back if a suppression turns out to be wrong.
@@ -44,28 +44,41 @@ export async function onRequestGet({ request, env }) {
 
 export async function onRequestPost({ request, env }) {
   if (!env.DB) return json({ error: 'no database bound' }, 503);
-  if (!authed(request, env)) return json({ error: 'unauthorized' }, 401);
+  if (!await authed(request, env)) return json({ error: 'unauthorized' }, 401);
 
-  let b;
-  try { b = await request.json(); } catch { return json({ error: 'invalid json' }, 400); }
+  const parsed = await readJson(request, 2_048);
+  if (parsed.error) return json({ error: parsed.error }, parsed.status);
+  const b = parsed.data;
+  if (!b || typeof b !== 'object' || Array.isArray(b)) return json({ error: 'invalid json' }, 400);
   const id = Number(b.id);
   const action = String(b.action || '');
   if (!Number.isInteger(id)) return json({ error: 'bad id' }, 400);
 
+  const row = await env.DB.prepare(
+    'SELECT id, kind, reason, status, suppress FROM suggestions WHERE id=?'
+  ).bind(id).first();
+  if (!row) return json({ error: 'not found' }, 404);
+
+  const pendingAction = ['approve', 'approve_hide', 'reject'].includes(action);
+  if (pendingAction && row.status !== 'new') return json({ error: 'already moderated' }, 409);
+
   if (action === 'approve') {
     await env.DB.prepare("UPDATE suggestions SET status='approved', iphash=NULL WHERE id=?").bind(id).run();
   } else if (action === 'approve_hide') {
+    if (row.kind !== 'report' || ['is_indoor', 'is_outdoor'].includes(row.reason))
+      return json({ error: 'action not valid for this row' }, 409);
     // Accept the report AND remove that spot from the map (survives daily rebuilds).
-    const row = await env.DB.prepare("SELECT lat, lon, cat FROM suggestions WHERE id=?").bind(id).first();
-    await env.DB.prepare("UPDATE suggestions SET status='approved', suppress=1, iphash=NULL WHERE id=?").bind(id).run();
-    if (row) {
-      // Resolve any duplicate reports about the same spot in one go.
-      await env.DB.prepare(
+    const location = await env.DB.prepare('SELECT lat, lon, cat FROM suggestions WHERE id=?').bind(id).first();
+    await env.DB.batch([
+      env.DB.prepare("UPDATE suggestions SET status='approved', suppress=1, iphash=NULL WHERE id=?").bind(id),
+      // Resolve any duplicate reports about the same spot in the same transaction.
+      env.DB.prepare(
         `UPDATE suggestions SET status='approved', suppress=1, iphash=NULL
           WHERE kind='report' AND status='new' AND cat=? AND abs(lat-?)<0.0005 AND abs(lon-?)<0.0005`
-      ).bind(row.cat, row.lat, row.lon).run();
-    }
+      ).bind(location.cat, location.lat, location.lon),
+    ]);
   } else if (action === 'unhide') {
+    if (!row.suppress) return json({ error: 'spot is not hidden' }, 409);
     await env.DB.prepare("UPDATE suggestions SET suppress=0 WHERE id=?").bind(id).run();
   } else if (action === 'reject') {
     await env.DB.prepare("UPDATE suggestions SET status='rejected', suppress=0, iphash=NULL WHERE id=?").bind(id).run();
@@ -74,5 +87,6 @@ export async function onRequestPost({ request, env }) {
   } else {
     return json({ error: 'bad action' }, 400);
   }
+  console.log(JSON.stringify({ event: 'moderation', id, action, kind: row.kind }));
   return json({ ok: true });
 }

@@ -91,6 +91,13 @@ The refresh runs unattended, so it refuses to write a bad `index.html`:
   (`MIN_EXPECTED` in `tools/refresh_data.py`).
 - **Shrink guard** — a category dropping below 85% of what's currently live also
   aborts, so a flaky response can't quietly delete thousands of points.
+- **Provider fallback** — the official and an independent public Overpass
+  instance are tried before the job gives up.
+- **Atomic output** — both languages are fully rendered and validated first, then
+  each public file is replaced atomically. The workflow commits both pages and
+  the sitemap together.
+- **Script-safe data** — JSON characters that can terminate an inline script are
+  escaped before untrusted OSM labels are embedded.
 
 On failure the script exits non-zero, the workflow fails, and the previous
 `index.html` stays deployed.

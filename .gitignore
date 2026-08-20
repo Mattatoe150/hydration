@@ -2,9 +2,15 @@
 .wrangler/
 node_modules/
 .dev.vars
+production-backups/
+backup-*.sql
 
 # OS
 .DS_Store
 
-# local Overpass snapshots (index.html is the built artifact and IS committed)
-tools/*.json
+# Local Overpass snapshots (index.html is the built artifact and IS committed).
+# Keep translations tracked: the scheduled rebuild cannot run without them.
+tools/water.json
+tools/cemetery.json
+tools/vending.json
+tools/shops.json

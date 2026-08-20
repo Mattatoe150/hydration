@@ -47,9 +47,9 @@
   "creditText": "Data \u00a9 OpenStreetMap contributors"
 }
 </script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" integrity="sha384-pmjIAcz2bAn0xukfxADbZIb3t8oRT9Sv0rvO+BR5Csr6Dhqq+nZs59P0pPKQJkEV" crossorigin="anonymous"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" integrity="sha384-wgw+aLYNQ7dlhK47ZPK7FRACiq7ROZwgFNg0m04avm4CaXS+Z9Y7nMu8yNjBKYC+" crossorigin="anonymous"/>
 <style>
   :root{
     --water:#1e88e5; --vdrinks:#f57c00; --vsnacks:#c98a00; --shop:#2e9e3f; --fuel:#8e44ad; --community:#d81b8c;
@@ -274,8 +274,8 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" integrity="sha384-eXVCORTRlv4FUUgS/xmOyr66XBVraen8ATNLMESp92FKXLAMiKkerixTiBvXriZr" crossorigin="anonymous"></script>
 <script>
 /* ---------- data ----------  POI = [lat, lon, cat, sub, name, oh]
    cat: water | vdrinks | vsnacks | shop | fuel   (community added at runtime) */
@@ -447,6 +447,8 @@ function loadOpeningHours(then){
   ohLoading=true;
   const s=document.createElement('script');
   s.src='https://cdn.jsdelivr.net/combine/npm/suncalc@1.9.0/suncalc.js,npm/opening_hours@3.14.0/build/opening_hours.js';
+  s.integrity='sha384-qU7tysyowse2mWwKI6c8KonFd2+msiRUVPfn0ayESMGmaUM1Cut4TVRPlb7UM63s';
+  s.crossOrigin='anonymous';
   s.onload=()=>{ ohReady=true; ohThen.splice(0).forEach(fn=>fn()); };
   s.onerror=()=>{ ohLoading=false; ohStatus.textContent='(open-now check unavailable)'; };
   document.head.appendChild(s);
@@ -481,6 +483,9 @@ let meMarker=null, meCircle=null, manualLocate=false;
 const findBtn=document.getElementById('findme');
 const LocBtn = L.Control.extend({options:{position:'topright'}, onAdd:function(){ const d=L.DomUtil.create('div','locbtn'); d.innerHTML='📍'; d.title='Find my location'; L.DomEvent.on(d,'click',L.DomEvent.stop).on(d,'click',()=>locate(true)); return d; }});
 map.addControl(new LocBtn());
+const locControl=document.querySelector('.locbtn');
+locControl.setAttribute('role','button'); locControl.tabIndex=0; locControl.setAttribute('aria-label',locControl.title);
+locControl.addEventListener('keydown', event=>{ if(event.key==='Enter'||event.key===' '){ event.preventDefault(); locate(true); } });
 function locate(manual){
   manualLocate = manual;
   if(manual) findBtn.textContent='📍 Locating…';
@@ -494,12 +499,15 @@ map.on('locationfound', e=>{
   findBtn.textContent='📍 Find me'; manualLocate=false;
 });
 map.on('locationerror', ()=>{ findBtn.textContent='📍 Find me'; if(manualLocate){ manualLocate=false; alert('Could not get your location. Allow location access for this site and try again.'); } });
-// Quick, silent auto-locate on first load (coarse/fast; ignored if blocked or denied).
-map.locate({setView:true, maxZoom:14, enableHighAccuracy:false, timeout:7000, maximumAge:120000});
 
 /* ---------- modals ---------- */
 const veil=document.getElementById('veil'), tip=document.getElementById('tip');
 const modals=['m-add','m-add2','m-report','m-comment','m-help'];
+modals.forEach(id=>{
+  const modal=document.getElementById(id);
+  modal.setAttribute('role','dialog'); modal.setAttribute('aria-modal','true');
+  modal.setAttribute('aria-label',modal.querySelector('h2').textContent);
+});
 let lastFocus=null;
 function openModal(id){
   lastFocus=document.activeElement;
@@ -543,12 +551,10 @@ map.on('click', e=>{
   document.getElementById('a2-osm').href = `https://www.openstreetmap.org/note/new#map=19/${pick.lat.toFixed(5)}/${pick.lng.toFixed(5)}&layers=N`;
   document.getElementById('a2-name').value=''; document.getElementById('a2-note').value=''; document.getElementById('a2-msg').textContent='';
   document.getElementById('a2-indoor').checked=false;
-  document.getElementById('a2-submitter').value = localStorage.getItem('hm_submitter') || '';   // remember the name across submissions
   openModal('m-add2');
 });
 document.getElementById('a2-submit').addEventListener('click', ()=>{
   const submitter=document.getElementById('a2-submitter').value.trim();
-  localStorage.setItem('hm_submitter', submitter);
   submit({
     kind:'add', cat:addType, lat:+pick.lat.toFixed(6), lon:+pick.lng.toFixed(6),
     name:document.getElementById('a2-name').value.trim(), note:document.getElementById('a2-note').value.trim(),
@@ -585,12 +591,10 @@ function openReport(d){
   const sel=document.getElementById('r-reason'); sel.innerHTML='';
   reasonsFor(d).forEach(([v,t])=>{ const o=document.createElement('option'); o.value=v; o.textContent=t; sel.appendChild(o); });
   document.getElementById('r-note').value=''; document.getElementById('r-msg').textContent='';
-  document.getElementById('r-submitter').value = localStorage.getItem('hm_submitter') || '';
   openModal('m-report');
 }
 document.getElementById('r-submit').addEventListener('click', ()=>{
   const submitter=document.getElementById('r-submitter').value.trim();
-  localStorage.setItem('hm_submitter', submitter);
   submit({
     kind:'report', cat:reportRef.cat, lat:reportRef.lat, lon:reportRef.lon,
     name:reportRef.name, reason:document.getElementById('r-reason').value,
@@ -614,7 +618,6 @@ function openComment(d){
   commentRef={lat:d.lat, lon:d.lon, cat:d.cat};
   document.getElementById('c-what').textContent = 'About: ' + (d.name || SUBLABEL[d.sub] || LABELS[d.cat]);
   document.getElementById('c-note').value=''; document.getElementById('c-msg').textContent='';
-  document.getElementById('c-submitter').value = localStorage.getItem('hm_submitter') || '';
   chosenStars=0; paintStars();
   openModal('m-comment');
 }
@@ -622,7 +625,6 @@ document.getElementById('c-submit').addEventListener('click', ()=>{
   const note=document.getElementById('c-note').value.trim();
   if(!note && !chosenStars){ document.getElementById('c-msg').textContent='⚠️ Add a rating or a few words first.'; return; }
   const submitter=document.getElementById('c-submitter').value.trim();
-  localStorage.setItem('hm_submitter', submitter);
   submit({ kind:'comment', cat:commentRef.cat, lat:commentRef.lat, lon:commentRef.lon,
            note, rating:chosenStars, submitter }, document.getElementById('c-msg'), 'comment');
 });
