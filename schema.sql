@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS suggestions (
   name    TEXT,
   note    TEXT,
   submitter TEXT,                       -- optional name the contributor gave (maintainer-only; never shown publicly)
+  indoor  INTEGER NOT NULL DEFAULT 0,   -- 1 = you must go inside a building/shop to reach it
   reason  TEXT,                         -- for reports: no_shop | gone | moved | closed_wrong | other
   status  TEXT NOT NULL DEFAULT 'new',  -- new | approved | rejected
   created TEXT NOT NULL,                -- ISO-8601 timestamp

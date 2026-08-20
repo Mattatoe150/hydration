@@ -30,7 +30,7 @@ const RATE_WINDOW_MS = 3600e3;  // … per IP per hour
 export async function onRequestGet({ env }) {
   if (!env.DB) return json({ pins: [], hidden: [] });
   const pins = await env.DB.prepare(
-    `SELECT id, lat, lon, cat, name, note, status
+    `SELECT id, lat, lon, cat, name, note, indoor, status
        FROM suggestions
       WHERE kind = 'add' AND status IN ('new', 'approved')
       ORDER BY created DESC
@@ -63,6 +63,7 @@ export async function onRequestPost({ request, env }) {
   const name = String(b.name || '').trim().slice(0, 80);
   const note = String(b.note || '').trim().slice(0, 280);
   const submitter = String(b.submitter || '').trim().slice(0, 40);
+  const indoor = b.indoor ? 1 : 0;   // contributor says you must go inside to reach it
   const reason = kind === 'report' ? String(b.reason || 'other') : null;
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return json({ error: 'bad coords' }, 400);
@@ -83,9 +84,9 @@ export async function onRequestPost({ request, env }) {
   }
 
   await env.DB.prepare(
-    `INSERT INTO suggestions (kind, cat, lat, lon, name, note, submitter, reason, status, created, iphash)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)`
-  ).bind(kind, cat, +lat.toFixed(6), +lon.toFixed(6), name, note, submitter, reason, new Date().toISOString(), iphash).run();
+    `INSERT INTO suggestions (kind, cat, lat, lon, name, note, submitter, indoor, reason, status, created, iphash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)`
+  ).bind(kind, cat, +lat.toFixed(6), +lon.toFixed(6), name, note, submitter, indoor, reason, new Date().toISOString(), iphash).run();
 
   return json({ ok: true });
 }

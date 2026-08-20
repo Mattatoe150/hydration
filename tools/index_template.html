@@ -165,6 +165,9 @@
     <input type="text" id="a2-name" maxlength="80" placeholder="e.g. Coke machine at sports hall / Delhaize"/>
     <label id="a2-notelabel">Note (optional) — anything useful</label>
     <textarea id="a2-note" maxlength="280" placeholder="e.g. cold drinks, 24/7, left of the entrance"></textarea>
+    <label>Getting to it</label>
+    <label class="toggle" style="padding:2px 0"><input type="checkbox" id="a2-indoor"/><span>🚪 You have to go <b>inside</b> a building or shop to reach it</span></label>
+    <p class="note" style="margin-top:4px">Leave unticked if you can just walk up to it — that's what the <b>walk-up</b> filter uses.</p>
     <label>Your name (optional) — lets the maintainer recognise who suggested it</label>
     <input type="text" id="a2-submitter" maxlength="40" placeholder="e.g. Jan, or leave blank"/>
     <p class="note">By submitting, you agree this spot may be added to <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> (ODbL). Prefer to add it upstream yourself? <a id="a2-osm" href="#" target="_blank" rel="noopener">Open an OSM note ↗</a></p>
@@ -470,6 +473,7 @@ map.on('click', e=>{
   document.getElementById('a2-loc').textContent = `📍 ${pick.lat.toFixed(5)}, ${pick.lng.toFixed(5)} — looks right? Add any detail below.`;
   document.getElementById('a2-osm').href = `https://www.openstreetmap.org/note/new#map=19/${pick.lat.toFixed(5)}/${pick.lng.toFixed(5)}&layers=N`;
   document.getElementById('a2-name').value=''; document.getElementById('a2-note').value=''; document.getElementById('a2-msg').textContent='';
+  document.getElementById('a2-indoor').checked=false;
   document.getElementById('a2-submitter').value = localStorage.getItem('hm_submitter') || '';   // remember the name across submissions
   openModal('m-add2');
 });
@@ -479,6 +483,7 @@ document.getElementById('a2-submit').addEventListener('click', ()=>{
   submit({
     kind:'add', cat:addType, lat:+pick.lat.toFixed(6), lon:+pick.lng.toFixed(6),
     name:document.getElementById('a2-name').value.trim(), note:document.getElementById('a2-note').value.trim(),
+    indoor: document.getElementById('a2-indoor').checked ? 1 : 0,
     submitter
   }, document.getElementById('a2-msg'), true);
 });
@@ -541,7 +546,7 @@ async function submit(body, msgEl, isAdd){
     return;
   }
   msgEl.innerHTML = isAdd ? '✅ Thanks! Added for the maintainer to verify.' : '✅ Thanks! Report sent for review.';
-  if(isAdd){ makeMarker([body.lat,body.lon,'community',body.cat,body.name||'', '', 0, 'new']); enabled.community=true;
+  if(isAdd){ makeMarker([body.lat,body.lon,'community',body.cat,body.name||'', '', body.indoor?1:0, 'new']); enabled.community=true;
     const el=document.querySelector('.lyr[data-cat="community"]');
     if(el){ el.classList.remove('off'); el.setAttribute('aria-pressed','true'); }
     recount(); refresh('community'); }
@@ -588,9 +593,9 @@ fetch('/api/suggestions').then(r=>r.ok?r.json():null).then(data=>{
     if(s.status==='approved'){
       if(!cats.includes(s.cat) || s.cat==='community') return;
       if(alreadyOnMap(lat, lon, s.cat, 40)) return;                 // deduped against OSM base data
-      makeMarker([lat, lon, s.cat, SUBFOR[s.cat]||'', s.name||'', '', 0, 'approved', true]);
+      makeMarker([lat, lon, s.cat, SUBFOR[s.cat]||'', s.name||'', '', s.indoor?1:0, 'approved', true]);
     } else {
-      makeMarker([lat, lon, 'community', s.cat, s.name||'', '', 0, 'new']);
+      makeMarker([lat, lon, 'community', s.cat, s.name||'', '', s.indoor?1:0, 'new']);
     }
     added++;
   });

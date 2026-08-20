@@ -94,6 +94,7 @@ function render(rows){
        ${r.submitter?`<div class="by">👤 by <b>${esc(r.submitter)}</b></div>`:'<div class="by anon">👤 anonymous</div>'}
        ${r.kind==='report'?`<div class="detail reason">⚑ ${REASONLABEL[r.reason]||r.reason}</div>`:''}
        ${r.note?`<div class="detail">${esc(r.note)}</div>`:''}
+       ${r.kind==='add'?`<div class="detail">${r.indoor?'🚪 Indoors — you have to go in':'🚲 Walk-up — reachable from outside'}</div>`:''}
        <div class="detail">📍 ${r.lat}, ${r.lon}</div>
        <div class="acts">
          ${mode==='hidden'

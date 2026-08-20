@@ -23,7 +23,7 @@ export async function onRequestGet({ request, env }) {
   // be put back if a suppression turns out to be wrong.
   if (new URL(request.url).searchParams.get('view') === 'hidden') {
     const { results } = await env.DB.prepare(
-      `SELECT id, kind, cat, lat, lon, name, note, submitter, reason, status, created
+      `SELECT id, kind, cat, lat, lon, name, note, submitter, indoor, reason, status, created
          FROM suggestions
         WHERE suppress = 1
         ORDER BY created DESC
@@ -33,7 +33,7 @@ export async function onRequestGet({ request, env }) {
   }
 
   const { results } = await env.DB.prepare(
-    `SELECT id, kind, cat, lat, lon, name, note, submitter, reason, status, created
+    `SELECT id, kind, cat, lat, lon, name, note, submitter, indoor, reason, status, created
        FROM suggestions
       WHERE status = 'new'
       ORDER BY created DESC
