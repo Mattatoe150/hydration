@@ -266,8 +266,55 @@ def build():
 
     data = json.dumps(pois, ensure_ascii=False, separators=(',', ':'))
     tpl = (HERE / "index_template.html").read_text()
-    (ROOT / "index.html").write_text(tpl.replace("__DATA__", data))
+
+    # English is the source language; Dutch is produced from it. Translations are
+    # applied to the TEMPLATE, never to the rendered page, so the POI data (which
+    # contains place names like "Shop" or "Open") can't be corrupted by a
+    # find/replace.
+    EN = {
+        "__LANG__": "en", "__CANONICAL__": "https://ikhebdorst.be/",
+        "__OGLOCALE__": "en_GB", "__OGALT__": "nl_BE",
+        "__OTHERURL__": "/nl/", "__OTHERLANG__": "nl",
+        "__LANGSWLABEL__": "NL", "__LANGSWTITLE__": "Lees deze pagina in het Nederlands",
+        "__SITENAME__": "I'm thirsty", "__ALTNAME__": "Hydration Map Belgium",
+        "__LDDESC__": "Map of free drinking water, public taps, fountains, drinks machines and open shops across Belgium.",
+        "__FEATURES__": ["Free drinking water and public taps", "Drinks vending machines",
+                          "Open shops and fuel stations with a shop", "Shows what is open right now",
+                          "Works on mobile and finds your location"],
+        "__ABOUTH__": "About this map",
+        "__ABOUT1__": "<b>I'm thirsty</b> shows where to find <b>free drinking water</b> in Belgium, "
+                      "or somewhere to buy a drink: public <b>drinking fountains</b> and <b>taps</b> "
+                      "(including ones run by De Watergroep, water-link, Farys and Pidpa), water points in "
+                      "NMBS/SNCB stations, cemetery taps, <b>vending machines</b>, night shops, supermarkets "
+                      "and fuel stations with a shop. It also shows <b>what is open right now</b>, including "
+                      "Sundays and Belgian public holidays — handy in a heatwave, on the bike, or just out and about.",
+        "__ABOUT2__": "Free, no ads, no account. The data comes from OpenStreetMap and is refreshed every day. "
+                      "Missing a spot? Add it yourself with <b>➕ Add / fix</b>.",
+    }
+
+    def render(placeholders, pairs=()):
+        out = tpl
+        # Longest source string first: a short phrase is often a substring of a
+        # longer one (">⏳ To be approved<" sits inside the badge markup), and
+        # replacing the short one first would strand the long one.
+        for find, repl in sorted(pairs, key=lambda pr: -len(pr[0])):
+            if find not in out:
+                raise SystemExit(f"Translation out of date — this text is no longer in the template:\n  {find[:90]}")
+            out = out.replace(find, repl)
+        for key, val in placeholders.items():
+            out = out.replace(key, json.dumps(val, ensure_ascii=False) if isinstance(val, list) else val)
+        left = re.findall(r'__[A-Z0-9]+__', out.replace('__DATA__', ''))
+        if left:
+            raise SystemExit(f"Unfilled placeholders: {sorted(set(left))}")
+        return out.replace("__DATA__", data)
+
+    (ROOT / "index.html").write_text(render(EN))
     print(f"Wrote {ROOT / 'index.html'} ({round(len(data)/1024)} KB of data).")
+
+    nl = json.loads((HERE / "i18n_nl.json").read_text())
+    nl_dir = ROOT / "nl"; nl_dir.mkdir(exist_ok=True)
+    (nl_dir / "index.html").write_text(render(nl["placeholders"], nl["pairs"]))
+    print(f"Wrote {nl_dir / 'index.html'} (Dutch, {len(nl['pairs'])} strings translated).")
 
     # keep the sitemap's lastmod honest — the data really did change today
     sm = ROOT / "sitemap.xml"

@@ -1,6 +1,6 @@
 # 💧 Hydration Map — Belgium
 
-### 🔗 Live at **[ikhebdorst.be](https://ikhebdorst.be)**
+### 🔗 Live at **[ikhebdorst.be](https://ikhebdorst.be)** · 🇳🇱 **[Nederlands](https://ikhebdorst.be/nl/)**
 
 An interactive map of places to **refill water** or **buy a cold drink** in
 Belgium/Flanders — for anyone who's thirsty (walking, cycling, running, or just
@@ -46,6 +46,7 @@ plausibly sell a drink. It's a best guess — users can **report** any that are 
 
 - **Front-end:** one static `index.html` — [Leaflet](https://leafletjs.com) + MarkerCluster + opening_hours.js (from CDN), OSM raster tiles. All ~10,000 POIs are embedded in the file.
 - **Suggestions backend (optional):** [Cloudflare Pages Functions](functions/api/) backed by [D1](https://developers.cloudflare.com/d1/) — `api/suggestions` (public add/report) and `api/moderate` (token-protected approve/reject, used by `admin.html`). Hardened with parameterised queries, strict validation, a honeypot, per-IP rate limiting (hashed IPs, never stored raw), and a constant-time token check. Without a backend the map still works fully and the form falls back to opening an OpenStreetMap note. Details in [docs/DATABASE.md](docs/DATABASE.md).
+- **Languages:** English at `/`, Dutch at `/nl/` — two real pages linked with `hreflang`, so search engines index both. English is the source; `tools/i18n_nl.json` holds the Dutch strings and the build fails loudly if the template changes without its translation.
 - **Data refresh:** [`tools/refresh_data.py`](tools/refresh_data.py) re-pulls OSM via the Overpass API and rebuilds `index.html` — standard-library Python, no dependencies. Runs **daily** via [GitHub Actions](.github/workflows/refresh-data.yml) so the base map stays current; the community database is untouched by it.
 
 ## Run locally
