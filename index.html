@@ -7,22 +7,49 @@
 <link rel="preconnect" href="https://a.tile.openstreetmap.org"/>
 <link rel="preconnect" href="https://b.tile.openstreetmap.org"/>
 <link rel="preconnect" href="https://c.tile.openstreetmap.org"/>
-<title>Hydration Map · Belgium — free water, open shops & drinks</title>
+<title>Ik heb dorst — gratis drinkwater, tappunten &amp; drankautomaten in België</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%92%A7%3C/text%3E%3C/svg%3E"/>
 <link rel="canonical" href="https://ikhebdorst.be/"/>
-<meta name="description" content="Find free water, open shops and cold drinks near you across Belgium — a community-maintained, open-data map. For anyone who's thirsty."/>
+<meta name="description" content="Vind gratis drinkwater, tappunten, drinkfonteinen, drankautomaten en open winkels in je buurt in België. Gratis kaart zonder reclame, met wat nú open is. Free drinking water, vending machines and open shops across Belgium."/>
 <meta property="og:type" content="website"/>
-<meta property="og:site_name" content="Hydration Map"/>
-<meta property="og:title" content="Hydration Map — free water, shops & drinks across Belgium"/>
-<meta property="og:description" content="Find free water, open shops and cold drinks near you across Belgium. Community-maintained, open data."/>
+<meta property="og:site_name" content="Ik heb dorst"/>
+<meta property="og:locale" content="nl_BE"/>
+<meta property="og:locale:alternate" content="en_GB"/>
+<meta property="og:title" content="Ik heb dorst — gratis drinkwater &amp; drankautomaten in België"/>
+<meta property="og:description" content="Vind gratis drinkwater, tappunten en drankautomaten in je buurt — en zie wat nú open is. Gratis, zonder reclame."/>
 <meta property="og:url" content="https://ikhebdorst.be/"/>
 <meta property="og:image" content="https://ikhebdorst.be/og.png"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
 <meta name="twitter:card" content="summary_large_image"/>
-<meta name="twitter:title" content="Hydration Map — free water, shops & drinks across Belgium"/>
-<meta name="twitter:description" content="Find free water, open shops and cold drinks near you across Belgium."/>
+<meta name="twitter:title" content="Ik heb dorst — gratis drinkwater &amp; drankautomaten in België"/>
+<meta name="twitter:description" content="Vind gratis drinkwater, tappunten en drankautomaten in je buurt in België."/>
 <meta name="twitter:image" content="https://ikhebdorst.be/og.png"/>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Ik heb dorst",
+  "alternateName": "Hydration Map België",
+  "url": "https://ikhebdorst.be/",
+  "description": "Kaart van gratis drinkwater, tappunten, drinkfonteinen, drankautomaten en open winkels in België.",
+  "applicationCategory": "TravelApplication",
+  "operatingSystem": "Web browser",
+  "inLanguage": ["nl-BE", "en"],
+  "isAccessibleForFree": true,
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"},
+  "areaServed": {"@type": "Country", "name": "Belgium"},
+  "featureList": [
+    "Gratis drinkwater en tappunten",
+    "Drankautomaten",
+    "Open winkels en tankstations met shop",
+    "Toont wat nu open is",
+    "Werkt op gsm en toont je locatie"
+  ],
+  "license": "https://opendatacommons.org/licenses/odbl/",
+  "creditText": "Data \u00a9 OpenStreetMap contributors"
+}
+</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
@@ -97,6 +124,9 @@
   .cmts{margin-top:7px;border-top:1px solid var(--line);padding-top:6px;max-height:150px;overflow:auto}
   .cmt{font-size:12px;color:#3a4658;line-height:1.45;margin-bottom:5px}
   .cmt .ago{color:var(--muted);font-size:11px}
+  .about{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+  .about h3{margin:0 0 4px;font-size:13px}
+  .about p{margin:0 0 6px;font-size:11.8px;line-height:1.5;color:var(--muted)}
   ul.guide{margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.6}
   ul.guide li{margin-bottom:4px}
   @media (max-width:640px){
@@ -235,6 +265,16 @@
       <li>Every submission is checked by the maintainer before it's trusted, so nothing you or anyone else adds can break the map.</li>
       <li>To improve the underlying data for <i>every</i> map, add it straight to <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">OpenStreetMap</a> — the <a href="https://streetcomplete.app/" target="_blank" rel="noopener">StreetComplete</a> app makes this a 2-tap job while you're out.</li>
     </ul>
+    <div class="about" lang="nl">
+      <h3>Over deze kaart</h3>
+      <p><b>Ik heb dorst</b> toont waar je in België <b>gratis drinkwater</b> vindt of iets te drinken kunt kopen:
+      openbare <b>drinkwaterfonteinen</b> en <b>tappunten</b> (onder andere van De Watergroep, water-link, Farys en Pidpa),
+      waterpunten in NMBS-stations, kerkhofkraantjes, <b>drankautomaten</b>, nachtwinkels, supermarkten
+      en tankstations met een shop. De kaart laat ook zien <b>wat nú open is</b>, inclusief zondagen en feestdagen —
+      handig tijdens een hittegolf, op de fiets of gewoon onderweg.</p>
+      <p>Gratis, zonder reclame en zonder account. De gegevens komen van OpenStreetMap en worden elke dag ververst.
+      Ontbreekt er een plek? Voeg ze zelf toe met <b>➕ Add / fix</b>.</p>
+    </div>
     <div class="actions"><button class="btn primary" data-close>Got it</button></div>
   </div>
 </div>

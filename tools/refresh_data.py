@@ -269,6 +269,13 @@ def build():
     (ROOT / "index.html").write_text(tpl.replace("__DATA__", data))
     print(f"Wrote {ROOT / 'index.html'} ({round(len(data)/1024)} KB of data).")
 
+    # keep the sitemap's lastmod honest — the data really did change today
+    sm = ROOT / "sitemap.xml"
+    if sm.exists():
+        today = time.strftime("%Y-%m-%d", time.gmtime())
+        sm.write_text(re.sub(r"<lastmod>[^<]*</lastmod>", f"<lastmod>{today}</lastmod>", sm.read_text()))
+        print(f"Updated sitemap lastmod to {today}.")
+
 
 if __name__ == "__main__":
     build()
