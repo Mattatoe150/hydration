@@ -93,9 +93,9 @@ need longer retention.
 
 [`.github/workflows/refresh-data.yml`](../.github/workflows/refresh-data.yml) runs
 `tools/refresh_data.py` every day at 04:17 UTC and commits the English page, Dutch
-page, and sitemap together when the OpenStreetMap data changes. The Git-connected
-Pages project then deploys that commit. This keeps water/shops/vending/fuel current
-without touching the submissions database. You can also run
+page, and sitemap together when the OpenStreetMap data changes. After all checks
+pass, the workflow uploads that exact commit to Pages. This keeps water/shops/
+vending/fuel current without touching the submissions database. You can also run
 it on demand from the repo's **Actions** tab, or locally:
 
 ```bash
