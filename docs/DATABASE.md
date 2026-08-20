@@ -23,7 +23,9 @@ One table, `suggestions` (full DDL in [`schema.sql`](../schema.sql)):
 | `cat` | `water` / `vdrinks` / `vsnacks` / `shop` / `fuel` |
 | `lat`, `lon` | coordinates |
 | `name`, `note` | free text (length-capped) |
-| `reason` | for reports: `no_shop` / `gone` / `moved` / `closed_wrong` / `other` |
+| `reason` | for reports: `no_shop` / `gone` / `moved` / `closed_wrong` / `is_indoor` / `is_outdoor` / `other` |
+| `suppress` | 1 = an accepted report that removes that spot from the map (survives daily rebuilds) |
+| `indoor` | 1 = you must go inside to reach it; drives the walk-up filter |
 | `status` | `new` → `approved` / `rejected` (your moderation) |
 | `created` | ISO-8601 timestamp |
 | `submitter` | optional name the contributor typed, so you can recognise regulars/friends — **shown only in `admin.html`, never in the public feed** |
