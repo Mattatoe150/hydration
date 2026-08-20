@@ -55,8 +55,29 @@ export async function onRequestGet({ env }) {
         AND reason IN ('is_indoor', 'is_outdoor')
       LIMIT 2000`
   ).all();
+  // Only APPROVED comments are public: unmoderated free text should never appear
+  // on the map. The author's name stays maintainer-only, as promised on the form.
+  const comments = await env.DB.prepare(
+    `SELECT lat, lon, cat, note, rating, created
+       FROM suggestions
+      WHERE kind = 'comment' AND status = 'approved' AND note <> ''
+      ORDER BY created DESC
+      LIMIT 2000`
+  ).all();
+  // Star ratings are just a number — no text to abuse — so they count straight
+  // away (rate-limited per IP). Rejected ones are excluded.
+  const ratings = await env.DB.prepare(
+    `SELECT ROUND(lat,5) AS lat, ROUND(lon,5) AS lon, cat,
+            ROUND(AVG(rating),2) AS avg, COUNT(*) AS n
+       FROM suggestions
+      WHERE kind = 'comment' AND rating > 0 AND status IN ('new','approved')
+      GROUP BY ROUND(lat,5), ROUND(lon,5), cat
+      LIMIT 2000`
+  ).all();
   return json({
     pins: pins.results ?? [],
+    comments: comments.results ?? [],
+    ratings: ratings.results ?? [],
     hidden: hidden.results ?? [],
     overrides: (overrides.results ?? []).map(o => ({ lat: o.lat, lon: o.lon, cat: o.cat, indoor: o.reason === 'is_indoor' ? 1 : 0 })),
   });
@@ -71,13 +92,14 @@ export async function onRequestPost({ request, env }) {
   // Honeypot: real users never fill the hidden `hp` field.
   if (b.hp) return json({ ok: true });   // silently accept-and-drop
 
-  const kind = b.kind === 'report' ? 'report' : 'add';
+  const kind = ['report', 'comment'].includes(b.kind) ? b.kind : 'add';
   const lat = Number(b.lat), lon = Number(b.lon);
   const cat = String(b.cat || '');
   const name = String(b.name || '').trim().slice(0, 80);
   const note = String(b.note || '').trim().slice(0, 280);
   const submitter = String(b.submitter || '').trim().slice(0, 40);
   const indoor = b.indoor ? 1 : 0;   // contributor says you must go inside to reach it
+  const rating = Math.min(5, Math.max(0, Math.round(Number(b.rating) || 0)));   // 0 = not rated
   const reason = kind === 'report' ? String(b.reason || 'other') : null;
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return json({ error: 'bad coords' }, 400);
@@ -85,6 +107,7 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'coords outside Belgium' }, 400);
   if (!CATS.includes(cat)) return json({ error: 'bad category' }, 400);
   if (kind === 'report' && !REASONS.includes(reason)) return json({ error: 'bad reason' }, 400);
+  if (kind === 'comment' && !note && !rating) return json({ error: 'please write a comment or give a rating' }, 400);
   if (URLISH.test(name) || URLISH.test(note) || URLISH.test(submitter)) return json({ error: 'links not allowed' }, 400);
 
   // Per-IP rate limit (hashed IP; we never persist the raw address).
@@ -98,9 +121,9 @@ export async function onRequestPost({ request, env }) {
   }
 
   await env.DB.prepare(
-    `INSERT INTO suggestions (kind, cat, lat, lon, name, note, submitter, indoor, reason, status, created, iphash)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)`
-  ).bind(kind, cat, +lat.toFixed(6), +lon.toFixed(6), name, note, submitter, indoor, reason, new Date().toISOString(), iphash).run();
+    `INSERT INTO suggestions (kind, cat, lat, lon, name, note, submitter, indoor, rating, reason, status, created, iphash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, ?)`
+  ).bind(kind, cat, +lat.toFixed(6), +lon.toFixed(6), name, note, submitter, indoor, rating, reason, new Date().toISOString(), iphash).run();
 
   return json({ ok: true });
 }

@@ -88,6 +88,14 @@
   #hp{position:absolute;left:-9999px}
   #tip{position:absolute;z-index:1500;top:12px;left:50%;transform:translateX(-50%);background:#1c2330;color:#fff;padding:8px 14px;border-radius:20px;font-size:12.5px;display:none;box-shadow:var(--shadow)}
   .locbtn{background:#fff;width:34px;height:34px;border-radius:8px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px}
+  .stars{display:flex;gap:4px;margin-top:4px}
+  .stars button{background:none;border:0;font-size:26px;line-height:1;cursor:pointer;padding:0 2px;filter:grayscale(1);opacity:.35}
+  .stars button.on{filter:none;opacity:1}
+  .rating{font-size:12.5px;color:#e8a93b;font-weight:700;margin-top:3px}
+  .rating .cnt{color:var(--muted);font-weight:400}
+  .cmts{margin-top:7px;border-top:1px solid var(--line);padding-top:6px;max-height:150px;overflow:auto}
+  .cmt{font-size:12px;color:#3a4658;line-height:1.45;margin-bottom:5px}
+  .cmt .ago{color:var(--muted);font-size:11px}
   ul.guide{margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.6}
   ul.guide li{margin-bottom:4px}
   @media (max-width:640px){
@@ -198,6 +206,24 @@
     <p class="note" id="r-msg"></p>
   </div>
 
+  <!-- COMMENT / RATING modal -->
+  <div class="modal card" id="m-comment" style="display:none">
+    <h2>Leave a comment</h2>
+    <p class="h" id="c-what"></p>
+    <label>Rating (optional)</label>
+    <div class="stars" id="c-stars"></div>
+    <label>Comment (optional) — a tip for the next person</label>
+    <textarea id="c-note" maxlength="280" placeholder="e.g. coins only, tap is round the back, water tastes fine"></textarea>
+    <label>Your name (optional)</label>
+    <input type="text" id="c-submitter" maxlength="40" placeholder="e.g. Jan, or leave blank"/>
+    <p class="note">Ratings show right away. Comments appear once the maintainer has had a look — your name is never shown publicly.</p>
+    <div class="actions">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="c-submit">Send</button>
+    </div>
+    <p class="note" id="c-msg"></p>
+  </div>
+
   <!-- HELP modal -->
   <div class="modal card" id="m-help" style="display:none">
     <h2>How to add or correct spots</h2>
@@ -280,8 +306,11 @@ function popupHTML(d){
     + `<div>${badge}</div>`
     + (d.oh?`<div class="kv" style="margin-top:3px">🕑 ${esc(d.oh)}</div>`:'')
     + (d.indoor?`<div class="kv" style="margin-top:3px">🚪 Indoors or customers-only — you'll need to go in</div>`:'')
+    + (d.rating?`<div class="rating">${'★'.repeat(Math.round(d.rating.avg))}${'☆'.repeat(5-Math.round(d.rating.avg))} ${d.rating.avg.toFixed(1)} <span class="cnt">(${d.rating.n})</span></div>`:'')
+    + (d.comments&&d.comments.length?`<div class="cmts">${d.comments.slice(0,5).map(c=>`<div class="cmt">💬 ${esc(c.note)}</div>`).join('')}</div>`:'')
     + `<div class="popact">`
-      + `<a class="js-report" role="button" tabindex="0">⚑ Report a problem</a>`
+      + `<a class="js-comment" role="button" tabindex="0">💬 Comment</a>`
+      + ` · <a class="js-report" role="button" tabindex="0">⚑ Report</a>`
       + (cat!=='community'?` · <a href="https://www.openstreetmap.org/#map=19/${encodeURIComponent(d.lat)}/${encodeURIComponent(d.lon)}" target="_blank" rel="noopener">OSM ↗</a>`:'')
     + `</div>`;
 }
@@ -292,12 +321,13 @@ function popupHTML(d){
 function buildPopup(d){
   const el=document.createElement('div');
   el.innerHTML = popupHTML(d);
-  const a = el.querySelector('.js-report');
-  if(a){
-    const go=ev=>{ ev.preventDefault(); openReport(d); };
+  const wire=(sel,fn)=>{ const a=el.querySelector(sel); if(!a) return;
+    const go=ev=>{ ev.preventDefault(); fn(d); };
     a.addEventListener('click', go);
     a.addEventListener('keydown', ev=>{ if(ev.key==='Enter'||ev.key===' ') go(ev); });
-  }
+  };
+  wire('.js-report', openReport);
+  wire('.js-comment', openComment);
   return el;
 }
 
@@ -433,7 +463,7 @@ map.locate({setView:true, maxZoom:14, enableHighAccuracy:false, timeout:7000, ma
 
 /* ---------- modals ---------- */
 const veil=document.getElementById('veil'), tip=document.getElementById('tip');
-const modals=['m-add','m-add2','m-report','m-help'];
+const modals=['m-add','m-add2','m-report','m-comment','m-help'];
 let lastFocus=null;
 function openModal(id){
   lastFocus=document.activeElement;
@@ -488,7 +518,7 @@ document.getElementById('a2-submit').addEventListener('click', ()=>{
     name:document.getElementById('a2-name').value.trim(), note:document.getElementById('a2-note').value.trim(),
     indoor: document.getElementById('a2-indoor').checked ? 1 : 0,
     submitter
-  }, document.getElementById('a2-msg'), true);
+  }, document.getElementById('a2-msg'), 'add');
 });
 
 /* REPORT flow */
@@ -529,7 +559,36 @@ document.getElementById('r-submit').addEventListener('click', ()=>{
     kind:'report', cat:reportRef.cat, lat:reportRef.lat, lon:reportRef.lon,
     name:reportRef.name, reason:document.getElementById('r-reason').value,
     note:document.getElementById('r-note').value.trim(), submitter
-  }, document.getElementById('r-msg'), false);
+  }, document.getElementById('r-msg'), 'report');
+});
+
+/* COMMENT / RATING flow */
+let commentRef=null, chosenStars=0;
+const starsEl=document.getElementById('c-stars');
+for(let i=1;i<=5;i++){
+  const b=document.createElement('button');
+  b.type='button'; b.textContent='★'; b.dataset.v=i;
+  b.setAttribute('aria-label', i+' star'+(i>1?'s':''));
+  b.addEventListener('click', ()=>{ chosenStars = (chosenStars===i ? 0 : i); paintStars(); });
+  starsEl.appendChild(b);
+}
+function paintStars(){ [...starsEl.children].forEach(b=> b.classList.toggle('on', +b.dataset.v <= chosenStars)); }
+
+function openComment(d){
+  commentRef={lat:d.lat, lon:d.lon, cat:d.cat};
+  document.getElementById('c-what').textContent = 'About: ' + (d.name || SUBLABEL[d.sub] || LABELS[d.cat]);
+  document.getElementById('c-note').value=''; document.getElementById('c-msg').textContent='';
+  document.getElementById('c-submitter').value = localStorage.getItem('hm_submitter') || '';
+  chosenStars=0; paintStars();
+  openModal('m-comment');
+}
+document.getElementById('c-submit').addEventListener('click', ()=>{
+  const note=document.getElementById('c-note').value.trim();
+  if(!note && !chosenStars){ document.getElementById('c-msg').textContent='⚠️ Add a rating or a few words first.'; return; }
+  const submitter=document.getElementById('c-submitter').value.trim();
+  localStorage.setItem('hm_submitter', submitter);
+  submit({ kind:'comment', cat:commentRef.cat, lat:commentRef.lat, lon:commentRef.lon,
+           note, rating:chosenStars, submitter }, document.getElementById('c-msg'), 'comment');
 });
 
 /* shared submit → backend. Distinguishes a *rejected* submission (server replied
@@ -540,8 +599,9 @@ const HUMAN_ERR = {
   'coords outside Belgium':'That spot is outside Belgium.',
   'bad category':'Something went wrong with the type — please try again.',
 };
-async function submit(body, msgEl, isAdd){
-  const btn = isAdd ? document.getElementById('a2-submit') : document.getElementById('r-submit');
+async function submit(body, msgEl, kind){
+  const isAdd = kind === true || kind === 'add';
+  const btn = document.getElementById(isAdd ? 'a2-submit' : kind==='comment' ? 'c-submit' : 'r-submit');
   if (btn.disabled) return;                                   // guard against double-submit
   btn.disabled = true; btn.style.opacity = .6;
   msgEl.textContent='Sending…';
@@ -563,7 +623,9 @@ async function submit(body, msgEl, isAdd){
       : 'Could not save that' + (reason?` (${reason})`:'') + '.'));
     return;
   }
-  msgEl.innerHTML = isAdd ? '✅ Thanks! Added for the maintainer to verify.' : '✅ Thanks! Report sent for review.';
+  msgEl.innerHTML = isAdd ? '✅ Thanks! Added for the maintainer to verify.'
+    : kind==='comment' ? '✅ Thanks! Your rating counts right away; the comment appears after review.'
+    : '✅ Thanks! Report sent for review.';
   if(isAdd){ makeMarker([body.lat,body.lon,'community',body.cat,body.name||'', '', body.indoor?1:0, 'new']); enabled.community=true;
     const el=document.querySelector('.lyr[data-cat="community"]');
     if(el){ el.classList.remove('off'); el.setAttribute('aria-pressed','true'); }
@@ -601,6 +663,17 @@ function applyHidden(hidden){
 
 /* Accepted "actually indoors / actually walk-up" corrections. OSM tags this on
    only a fraction of spots, so these keep the walk-up filter honest. */
+/* Hang community ratings/comments on whichever pin they belong to. */
+function attachToSpots(rows, assign){
+  rows.forEach(r=>{
+    const lat=Number(r.lat), lon=Number(r.lon), cat=r.cat;
+    if(!Number.isFinite(lat)||!Number.isFinite(lon)||!markers[cat]) return;
+    const dLat=45/111000, dLon=45/(111000*Math.cos(lat*Math.PI/180) || 1);
+    const hit = markers[cat].find(m=> Math.abs(m._hm.lat-lat)<dLat && Math.abs(m._hm.lon-lon)<dLon);
+    if(hit) assign(hit._hm, r);
+  });
+}
+
 function applyOverrides(overrides){
   let changed=0;
   overrides.forEach(o=>{
@@ -623,6 +696,10 @@ fetch('/api/suggestions').then(r=>r.ok?r.json():null).then(data=>{
   const list   = Array.isArray(data) ? data : (data.pins || []);
   const hidden = Array.isArray(data) ? []   : (data.hidden || []);
   const overrides = Array.isArray(data) ? [] : (data.overrides || []);
+  const comments  = Array.isArray(data) ? [] : (data.comments  || []);
+  const ratings   = Array.isArray(data) ? [] : (data.ratings   || []);
+  attachToSpots(ratings,  (d,r)=>{ d.rating = {avg:Number(r.avg), n:r.n}; });
+  attachToSpots(comments, (d,c)=>{ (d.comments = d.comments || []).push(c); });
   let added = applyHidden(hidden) + applyOverrides(overrides);
   list.forEach(s=>{
     const lat=Number(s.lat), lon=Number(s.lon);

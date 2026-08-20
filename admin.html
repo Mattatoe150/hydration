@@ -17,7 +17,8 @@
   .card{background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(20,30,50,.08);padding:14px 16px;margin-bottom:12px}
   .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .tag{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;color:#fff}
-  .t-add{background:#2e9e3f}.t-report{background:#e0862a}
+  .t-add{background:#2e9e3f}.t-report{background:#e0862a}.t-comment{background:#7048c4}
+  .stars{color:#e8a93b;font-weight:700;font-size:14px}
   .cat{font-size:11px;font-weight:600;color:#5b6675}
   .when{margin-left:auto;font-size:11px;color:#98a2b3}
   .name{font-weight:700;margin:5px 0 2px;font-size:15px}
@@ -87,13 +88,14 @@ function render(rows){
     const esc = s => (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
     el.innerHTML =
       `<div class="top">
-         <span class="tag ${r.kind==='report'?'t-report':'t-add'}">${r.kind==='report'?'REPORT':'ADD'}</span>
+         <span class="tag ${r.kind==='report'?'t-report':r.kind==='comment'?'t-comment':'t-add'}">${r.kind==='report'?'REPORT':r.kind==='comment'?'COMMENT':'ADD'}</span>
          <span class="cat">${CATLABEL[r.cat]||r.cat||''}</span>
          <span class="when">${new Date(r.created).toLocaleString('en-GB')}</span>
        </div>
        <div class="name">${esc(r.name)||'(no name)'}</div>
        ${r.submitter?`<div class="by">👤 by <b>${esc(r.submitter)}</b></div>`:'<div class="by anon">👤 anonymous</div>'}
        ${r.kind==='report'?`<div class="detail reason">⚑ ${REASONLABEL[r.reason]||r.reason}</div>`:''}
+       ${r.rating?`<div class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>`:''}
        ${r.note?`<div class="detail">${esc(r.note)}</div>`:''}
        ${r.kind==='add'?`<div class="detail">${r.indoor?'🚪 Indoors — you have to go in':'🚲 Walk-up — reachable from outside'}</div>`:''}
        <div class="detail">📍 ${r.lat}, ${r.lon}</div>
@@ -101,6 +103,10 @@ function render(rows){
          ${mode==='hidden'
            ? `<button class="unhide">↩︎ Put back on the map</button>
               <button class="del">Delete</button>`
+           : r.kind==='comment'
+             ? `<button class="approve">✓ Publish comment</button>
+                <button class="reject">Reject</button>
+                <button class="del">Delete</button>`
            : r.kind==='report'
              ? (ACCESS_FIX(r.reason)
                 ? `<button class="approve">✓ Accept &amp; fix access</button>
@@ -111,13 +117,18 @@ function render(rows){
              : `<button class="approve">Approve</button>
                 <button class="reject">Reject</button>
                 <button class="del">Delete</button>`}
-         ${r.kind==='add'
+         ${r.kind==='comment'
+           ? `<a href="https://www.openstreetmap.org/#map=19/${r.lat}/${r.lon}" target="_blank" rel="noopener">view on OSM ↗</a>`
+         : r.kind==='add'
            ? `<a href="https://www.openstreetmap.org/edit#map=19/${r.lat}/${r.lon}" target="_blank" rel="noopener">✎ Add to OSM ↗</a>`
            : `<a href="https://www.openstreetmap.org/edit#map=19/${r.lat}/${r.lon}" target="_blank" rel="noopener">✎ Fix in OSM ↗</a>`}
        </div>`;
     const q = c => el.querySelector(c);
     if(mode==='hidden'){
       q('.unhide').onclick = ()=> act(r.id,'unhide',el);
+    } else if(r.kind==='comment'){
+      q('.approve').onclick = ()=> act(r.id,'approve',el);
+      q('.reject').onclick  = ()=> act(r.id,'reject',el);
     } else if(r.kind==='report'){
       if(ACCESS_FIX(r.reason)){
         q('.approve').onclick = ()=> act(r.id,'approve',el);      // applies the indoor/outdoor fix
