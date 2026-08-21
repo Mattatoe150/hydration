@@ -4,6 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
+<link rel="preload" href="/data/pois.js" as="script"/>
 <link rel="preconnect" href="https://a.tile.openstreetmap.org"/>
 <link rel="preconnect" href="https://b.tile.openstreetmap.org"/>
 <link rel="preconnect" href="https://c.tile.openstreetmap.org"/>
@@ -276,10 +277,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" integrity="sha384-eXVCORTRlv4FUUgS/xmOyr66XBVraen8ATNLMESp92FKXLAMiKkerixTiBvXriZr" crossorigin="anonymous"></script>
+<script src="/data/pois.js"></script>
 <script>
 /* ---------- data ----------  POI = [lat, lon, cat, sub, name, oh]
    cat: water | vdrinks | vsnacks | shop | fuel   (community added at runtime) */
-const POIS = __DATA__;
 const COLORS = {water:'#1e88e5', vdrinks:'#f57c00', vsnacks:'#c98a00', shop:'#2e9e3f', fuel:'#8e44ad', community:'#d81b8c'};
 const LABELS = {water:'Free water', vdrinks:'Drinks vending', vsnacks:'Snacks vending', shop:'Shop', fuel:'Fuel-station shop', community:'To be approved'};
 const SUBLABEL = {drinking_water:'Drinking water point', water_tap:'Water tap', spring:'Spring (drinkable)', fountain:'Drinkable fountain',

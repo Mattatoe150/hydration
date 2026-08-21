@@ -1,6 +1,6 @@
 name: Refresh OSM data
 
-# Rebuilds index.html from OpenStreetMap once a day so the base map stays current.
+# Rebuilds the shared POI payload and pages once a day so the base map stays current.
 # Runs at 04:17 UTC daily; also runnable manually from the Actions tab.
 on:
   schedule:
@@ -35,7 +35,7 @@ jobs:
 
       - run: npm ci
 
-      - name: Rebuild index.html from OpenStreetMap
+      - name: Rebuild map data and pages from OpenStreetMap
         run: python3 tools/refresh_data.py
 
       - name: Verify the generated pages and Functions
@@ -44,12 +44,12 @@ jobs:
       - name: Commit if the data changed
         run: |
           git diff --check
-          if git diff --quiet -- index.html nl/index.html sitemap.xml; then
+          if git diff --quiet -- data/pois.js index.html nl/index.html sitemap.xml; then
             echo "No data changes today."
           else
             git config user.name  "hydration-bot"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add index.html nl/index.html sitemap.xml
+            git add data/pois.js index.html nl/index.html sitemap.xml
             git commit -m "Daily OSM data refresh [skip ci]"
             git push
           fi

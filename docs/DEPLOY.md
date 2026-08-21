@@ -93,7 +93,7 @@ the tab closes.
 
 ### Why a bot can't wreck the map
 
-- The base map (water/shops/vending/fuel) is baked into `index.html` from
+- The base map (water/shops/vending/fuel) is generated into `data/pois.js` from
   OpenStreetMap and is **never** touched by the API.
 - Public submissions can only *create* `status='new'` rows in a separate layer.
 - Worst case, a spammer creates pending pins you bulk-reject/delete from the admin
@@ -126,7 +126,7 @@ npx wrangler d1 execute hydration --remote \
 
 ## Keeping the base map fresh (daily)
 
-The OpenStreetMap-derived data in `index.html` is rebuilt automatically by
+The OpenStreetMap-derived `data/pois.js` payload is rebuilt automatically by
 [`.github/workflows/refresh-data.yml`](../.github/workflows/refresh-data.yml) —
 daily at 04:17 UTC, plus on demand from the repo's **Actions** tab.
 

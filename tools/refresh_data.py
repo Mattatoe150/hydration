@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Refresh the map data from OpenStreetMap (via the Overpass API) and rebuild
-../index.html from index_template.html.
+Refresh the map data from OpenStreetMap (via the Overpass API), rebuild the
+shared ../data/pois.js payload, and render both language pages.
 
     python3 tools/refresh_data.py            # fetch fresh data, then rebuild
     python3 tools/refresh_data.py --cached   # rebuild from tools/*.json snapshots
@@ -135,11 +135,13 @@ MAX_SHRINK = 0.85   # also fail if any category drops below 85% of what's live n
 
 
 def previous_counts():
-    """Category counts currently baked into ../index.html (empty on first build)."""
-    idx = ROOT / "index.html"
-    if not idx.exists():
+    """Category counts in the currently generated payload (empty on first build)."""
+    generated = ROOT / "data" / "pois.js"
+    # Backward-compatible fallback for the first build after the payload split.
+    source = generated if generated.exists() else ROOT / "index.html"
+    if not source.exists():
         return {}
-    m = re.search(r'const POIS = (\[.*?\]);\n', idx.read_text(), re.S)
+    m = re.search(r'const POIS = (\[.*?\]);\n', source.read_text(), re.S)
     if not m:
         return {}
     try:
@@ -159,7 +161,7 @@ def sanity_check(counts):
         if was and got < was * MAX_SHRINK:
             problems.append(f"{cat}: {got} is under {int(MAX_SHRINK*100)}% of the previous {was}")
     if problems:
-        raise SystemExit("Refusing to write index.html — the new data looks wrong:\n  - "
+        raise SystemExit("Refusing to write generated map files — the new data looks wrong:\n  - "
                          + "\n  - ".join(problems)
                          + "\n(Overpass may have returned partial data. Re-run later.)")
     if prev:
@@ -241,7 +243,7 @@ EN = {
 }
 
 
-def render(template, data, placeholders, pairs=()):
+def render(template, placeholders, pairs=()):
     """Render one language and fail if its translation has drifted."""
     out = template
     # Longest source first because shorter phrases may be substrings of longer ones.
@@ -251,10 +253,10 @@ def render(template, data, placeholders, pairs=()):
         out = out.replace(find, repl)
     for key, value in placeholders.items():
         out = out.replace(key, json.dumps(value, ensure_ascii=False) if isinstance(value, list) else value)
-    left = re.findall(r'__[A-Z0-9]+__', out.replace('__DATA__', ''))
+    left = re.findall(r'__[A-Z0-9]+__', out)
     if left:
         raise SystemExit(f"Unfilled placeholders: {sorted(set(left))}")
-    return out.replace("__DATA__", data)
+    return out
 
 
 def build():
@@ -330,9 +332,10 @@ def build():
 
     nl = json.loads((HERE / "i18n_nl.json").read_text())
     nl_dir = ROOT / "nl"; nl_dir.mkdir(exist_ok=True)
+    data_dir = ROOT / "data"; data_dir.mkdir(exist_ok=True)
     # Render and validate every language before replacing any public file.
-    rendered_en = render(tpl, data, EN)
-    rendered_nl = render(tpl, data, nl["placeholders"], nl["pairs"])
+    rendered_en = render(tpl, EN)
+    rendered_nl = render(tpl, nl["placeholders"], nl["pairs"])
 
     # keep the sitemap's lastmod honest — the data really did change today
     sm = ROOT / "sitemap.xml"
@@ -341,11 +344,15 @@ def build():
         today = time.strftime("%Y-%m-%d", time.gmtime())
         rendered_sitemap = re.sub(r"<lastmod>[^<]*</lastmod>", f"<lastmod>{today}</lastmod>", sm.read_text())
 
+    # Write the shared payload first. Existing pages can safely use either the
+    # previous or new payload because its compact schema is stable.
+    atomic_write(data_dir / "pois.js", "/* Generated from OpenStreetMap; do not edit. */\nconst POIS = " + data + ";\n")
     atomic_write(ROOT / "index.html", rendered_en)
     atomic_write(nl_dir / "index.html", rendered_nl)
     if rendered_sitemap is not None:
         atomic_write(sm, rendered_sitemap)
     print(f"Wrote {ROOT / 'index.html'} ({round(len(data)/1024)} KB of data).")
+    print(f"Wrote {data_dir / 'pois.js'} (shared by both languages).")
     print(f"Wrote {nl_dir / 'index.html'} (Dutch, {len(nl['pairs'])} strings translated).")
     if rendered_sitemap is not None:
         print(f"Updated sitemap lastmod to {today}.")

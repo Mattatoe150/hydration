@@ -1,7 +1,8 @@
 # Data sources & refreshing
 
 All map data comes from **OpenStreetMap** via the
-[Overpass API](https://overpass-api.de/). Snapshot embedded in `index.html`:
+[Overpass API](https://overpass-api.de/). Snapshot generated in `data/pois.js`
+and loaded by both language pages:
 **2026-08-20**, whole of Belgium (~10,000 points).
 
 ## What's included
@@ -82,7 +83,7 @@ empty value renders as **"hours unknown"**, not "closed".
 
 ## Safety guards on the daily rebuild
 
-The refresh runs unattended, so it refuses to write a bad `index.html`:
+The refresh runs unattended, so it refuses to write a bad generated payload:
 
 - **Partial-result detection** — Overpass answers `200` with a `remark` field when a
   query times out or runs out of memory, and the payload is then silently
@@ -94,13 +95,13 @@ The refresh runs unattended, so it refuses to write a bad `index.html`:
 - **Provider fallback** — the official and an independent public Overpass
   instance are tried before the job gives up.
 - **Atomic output** — both languages are fully rendered and validated first, then
-  each public file is replaced atomically. The workflow commits both pages and
-  the sitemap together.
-- **Script-safe data** — JSON characters that can terminate an inline script are
-  escaped before untrusted OSM labels are embedded.
+  each public file is replaced atomically. The workflow commits the payload, both
+  pages, and the sitemap together.
+- **Script-safe data** — unsafe JSON characters are escaped before untrusted OSM
+  labels are written into the generated JavaScript payload.
 
 On failure the script exits non-zero, the workflow fails, and the previous
-`index.html` stays deployed.
+payload and pages stay deployed.
 
 ## Refreshing
 
@@ -108,9 +109,10 @@ On failure the script exits non-zero, the workflow fails, and the previous
 python3 tools/refresh_data.py
 ```
 
-This re-runs the three Overpass queries, rebuilds `index.html` from
-`tools/index_template.html`, and prints the new counts. Standard-library Python
-only — no dependencies. Overpass can be rate-limited; the script retries.
+This re-runs the Overpass queries, rebuilds the shared `data/pois.js` payload and
+both HTML pages from `tools/index_template.html`, and prints the new counts.
+Standard-library Python only — no dependencies. Overpass can be rate-limited;
+the script retries.
 
 ## Explore the raw data yourself
 
