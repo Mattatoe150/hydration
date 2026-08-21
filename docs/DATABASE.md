@@ -2,7 +2,7 @@
 
 The map has **two data sources**, kept deliberately separate:
 
-1. **Base map** — water/vending/shops/fuel, baked into `index.html` from
+1. **Base map** — water/vending/shops/fuel, generated into `data/pois.js` from
    OpenStreetMap. Read-only at runtime; refreshed by `tools/refresh_data.py`
    (daily via GitHub Actions — see below). **The app never writes to this.**
 2. **Community submissions** — a small [Cloudflare D1](https://developers.cloudflare.com/d1/)

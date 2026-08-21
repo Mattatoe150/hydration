@@ -40,18 +40,19 @@ plausibly sell a drink. It's a best guess — users can **report** any that are 
 - **Add / fix** — a guided form to add a spot (drinks machine, shop, petrol-with-shop, or water) or to **report** a problem on an existing one ("no shop here", "doesn't exist anymore", "wrong hours")
 - **Maintainer moderation & upstreaming** — everything submitted stays an unverified "Community" pin (or, for reports, invisible) until you approve it at [`/admin.html`](admin.html); nothing a user or bot submits can alter the base map. From the admin page, one click (**✎ Add to OSM**) opens the OpenStreetMap editor at the spot so you can push a verified pin *upstream* into OSM — where every map benefits and your own map picks it up on the next data refresh. Submitters consent to ODbL, so this stays licence-clean.
 - Marker clustering, so ~10k points stay fast and legible
-- Single self-contained `index.html` (data embedded) — trivially hostable
+- Static HTML plus one shared generated POI payload — trivially hostable and
+  independently cacheable across both languages
 
 ## Tech
 
-- **Front-end:** one static `index.html` — [Leaflet](https://leafletjs.com) + MarkerCluster + opening_hours.js (from CDN), OSM raster tiles. All ~10,000 POIs are embedded in the file.
+- **Front-end:** static HTML — [Leaflet](https://leafletjs.com) + MarkerCluster + opening_hours.js (from CDN), OSM raster tiles. The ~10,000 POIs live in the generated `data/pois.js`, shared and cached independently by both language pages.
 - **Suggestions backend (optional):** [Cloudflare Pages Functions](functions/api/) backed by [D1](https://developers.cloudflare.com/d1/) — `api/suggestions` (public add/report) and `api/moderate` (token-protected approve/reject, used by `admin.html`). Hardened with parameterised queries, strict validation, a honeypot, per-IP rate limiting (hashed IPs, never stored raw), and a constant-time token check. Without a backend the map still works fully and the form falls back to opening an OpenStreetMap note. Details in [docs/DATABASE.md](docs/DATABASE.md).
 - **Languages:** English at `/`, Dutch at `/nl/` — two real pages linked with `hreflang`, so search engines index both. English is the source; `tools/i18n_nl.json` holds the Dutch strings and the build fails loudly if the template changes without its translation.
-- **Data refresh:** [`tools/refresh_data.py`](tools/refresh_data.py) re-pulls OSM via the Overpass API and rebuilds `index.html` — standard-library Python, no dependencies. Runs **daily** via [GitHub Actions](.github/workflows/refresh-data.yml) so the base map stays current; the community database is untouched by it.
+- **Data refresh:** [`tools/refresh_data.py`](tools/refresh_data.py) re-pulls OSM via the Overpass API and rebuilds the shared payload plus both pages — standard-library Python, no dependencies. Runs **daily** via [GitHub Actions](.github/workflows/refresh-data.yml) so the base map stays current; the community database is untouched by it.
 
 ## Run locally
 
-It's a static file — open `index.html` in a browser, or serve the folder:
+Serve the static folder locally so the shared `/data/pois.js` path resolves:
 
 ```bash
 python3 -m http.server 8000
